@@ -5,111 +5,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LumbridgeScape — OSRS Prototype</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; cursor: default; }
+body { overflow: hidden; background: #000; font-family: 'VT323', monospace; cursor: default; image-rendering: pixelated; }
 canvas { display: block; }
 
-/* OSRS-style UI */
 #ui-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 #ui-layer > * { pointer-events: auto; }
 
-/* Chat box */
+/* Chat box - OSRS style */
 #chatbox {
-  position: fixed; bottom: 0; left: 0; width: 520px; height: 142px;
-  background: rgba(0,0,0,0.75); border: 2px solid #5a4a2a; border-radius: 4px 4px 0 0;
+  position: fixed; bottom: 0; left: 0; width: 520px; height: 152px;
+  background: linear-gradient(180deg, rgba(60,50,30,0.95) 0%, rgba(40,32,18,0.97) 100%);
+  border: 2px solid #5a4a2a; border-bottom: none;
   display: flex; flex-direction: column; z-index: 20;
 }
+#chat-tabs { display: flex; background: #3c2f1a; border-bottom: 1px solid #5a4a2a; }
+.chat-tab { padding: 3px 12px; color: #b0a060; font-size: 13px; cursor: pointer; border-right: 1px solid #5a4a2a; }
+.chat-tab.active { color: #ffd700; background: #5a4a2a; }
 #chat-log {
-  flex: 1; overflow-y: auto; padding: 6px 10px; color: #ffff00; font-size: 13px;
-  line-height: 1.4; scrollbar-width: thin;
+  flex: 1; overflow-y: auto; padding: 4px 8px; color: #000; font-size: 14px;
+  line-height: 1.35; scrollbar-width: thin; background: rgba(210,190,150,0.12);
 }
-#chat-log .system { color: #00ffff; }
-#chat-log .npc { color: #00ff80; }
-#chat-log .game { color: #ff3333; }
+#chat-log .system { color: #3366ff; }
+#chat-log .game { color: #990000; }
+#chat-log .npc { color: #00aa00; }
+#chat-log .drop { color: #7f00ff; font-weight: bold; }
+#chat-log .rare { color: #ff0000; font-weight: bold; }
+#chat-log .combat { color: #cc3300; }
+#chat-log .skill { color: #006600; }
+#chat-log .player { color: #0000ff; }
 #chat-input-row { display: flex; border-top: 1px solid #5a4a2a; }
 #chat-input {
-  flex: 1; background: rgba(0,0,0,0.6); border: none; color: #ffff00;
-  padding: 4px 10px; font-size: 13px; outline: none;
+  flex: 1; background: rgba(30,24,12,0.8); border: none; color: #00ffff;
+  padding: 4px 10px; font-size: 14px; outline: none; font-family: 'VT323', monospace;
 }
 
 /* Minimap */
 #minimap {
-  position: fixed; top: 8px; right: 8px; width: 160px; height: 160px;
+  position: fixed; top: 4px; right: 4px; width: 172px; height: 172px;
   border: 3px solid #5a4a2a; border-radius: 50%; overflow: hidden;
   background: #1a3a1a; z-index: 20;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.5), 0 0 6px rgba(0,0,0,0.4);
 }
 #minimap canvas { border-radius: 50%; }
+#minimap-frame {
+  position: absolute; top: -3px; left: -3px; width: 178px; height: 178px;
+  border: 3px solid #3a2a10; border-radius: 50%; pointer-events: none;
+}
 
-/* Inventory panel */
-#inv-panel {
-  position: fixed; top: 178px; right: 8px; width: 210px;
-  background: rgba(60,50,30,0.92); border: 2px solid #5a4a2a; border-radius: 4px;
-  z-index: 20; display: none;
+/* Side panel */
+#side-panel {
+  position: fixed; top: 186px; right: 4px; width: 218px;
+  background: linear-gradient(180deg, rgba(70,58,34,0.95) 0%, rgba(50,40,22,0.97) 100%);
+  border: 2px solid #5a4a2a; border-radius: 4px;
+  z-index: 20; max-height: calc(100vh - 200px); overflow-y: auto;
 }
-#inv-header {
-  background: #5a4a2a; color: #ffd700; text-align: center; padding: 4px;
-  font-weight: bold; font-size: 14px; cursor: pointer; user-select: none;
-}
-#inv-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 6px;
-}
-.inv-slot {
-  width: 46px; height: 46px; background: rgba(0,0,0,0.4); border: 1px solid #3a3a2a;
-  border-radius: 3px; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; font-size: 10px; color: #ffd700; position: relative;
-}
-.inv-slot .item-icon { font-size: 22px; }
-.inv-slot .item-count {
-  position: absolute; bottom: 1px; right: 3px; font-size: 10px;
-  color: #ffff00; text-shadow: 1px 1px #000;
-}
-.inv-slot.equipped { border-color: #ffd700; background: rgba(255,215,0,0.15); }
 
 /* Tab buttons */
 #tab-bar {
-  position: fixed; top: 178px; right: 8px; width: 210px;
-  display: flex; z-index: 21;
+  display: flex; background: #3c2f1a; border-bottom: 2px solid #5a4a2a;
 }
 .tab-btn {
-  flex: 1; padding: 5px; text-align: center; background: #3a3020;
-  border: 1px solid #5a4a2a; color: #c0a040; font-size: 12px; cursor: pointer;
-  user-select: none;
+  flex: 1; padding: 6px 2px; text-align: center; background: #3a3020;
+  border-right: 1px solid #5a4a2a; color: #b09850; font-size: 13px; cursor: pointer;
+  user-select: none; font-family: 'VT323', monospace;
 }
+.tab-btn:last-child { border-right: none; }
 .tab-btn.active { background: #5a4a2a; color: #ffd700; }
+.tab-btn:hover { background: #4a3a20; }
+
+/* Inventory */
+#inv-panel { display: none; padding: 4px; }
+#inv-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 2px;
+}
+.inv-slot {
+  width: 48px; height: 48px; background: rgba(60,45,20,0.6); border: 1px solid #2a2210;
+  border-radius: 2px; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; position: relative; cursor: pointer;
+  image-rendering: pixelated;
+}
+.inv-slot:hover { background: rgba(90,74,42,0.7); border-color: #5a4a2a; }
+.inv-slot canvas { image-rendering: pixelated; }
+.inv-slot .item-name {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  font-size: 9px; color: #ff8800; text-align: center;
+  text-shadow: 1px 1px 0 #000; line-height: 1;
+  font-family: 'VT323', monospace;
+}
+.inv-slot .item-count {
+  position: absolute; top: 1px; left: 2px; font-size: 11px;
+  color: #ffff00; text-shadow: 1px 1px 0 #000;
+  font-family: 'VT323', monospace;
+}
+.inv-slot.equipped { border: 2px solid #ffd700; background: rgba(255,215,0,0.12); }
 
 /* Stats panel */
-#stats-panel {
-  position: fixed; top: 178px; right: 8px; width: 210px;
-  background: rgba(60,50,30,0.92); border: 2px solid #5a4a2a; border-radius: 4px;
-  z-index: 20; display: none; padding: 8px;
+#stats-panel { display: none; padding: 6px; }
+.stat-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 2px 4px; margin: 1px 0; border-radius: 2px;
 }
-.stat-row { display: flex; justify-content: space-between; color: #ffd700; font-size: 13px; padding: 2px 4px; }
-.stat-row .stat-name { color: #c0a040; }
+.stat-row:hover { background: rgba(255,215,0,0.08); }
+.stat-icon { width: 18px; height: 18px; margin-right: 4px; image-rendering: pixelated; }
+.stat-name { color: #ffd700; font-size: 14px; flex: 1; }
+.stat-level { color: #ffffff; font-size: 14px; font-weight: bold; }
+.stat-xp { color: #aaa080; font-size: 11px; }
 
-/* Equipment display */
-#equip-display {
-  position: fixed; top: 178px; right: 8px; width: 210px;
-  background: rgba(60,50,30,0.92); border: 2px solid #5a4a2a; border-radius: 4px;
-  z-index: 20; display: none; padding: 10px; text-align: center; color: #ffd700; font-size: 13px;
+/* Equipment panel */
+#equip-panel { display: none; padding: 10px; text-align: center; }
+.equip-grid {
+  display: grid; grid-template-columns: repeat(3, 56px); gap: 4px;
+  justify-content: center; margin-top: 6px;
 }
 .equip-slot-box {
-  display: inline-block; width: 50px; height: 50px; background: rgba(0,0,0,0.4);
-  border: 1px solid #5a4a2a; border-radius: 4px; margin: 4px;
-  display: flex; align-items: center; justify-content: center; font-size: 24px;
+  width: 56px; height: 56px; background: rgba(0,0,0,0.35);
+  border: 2px solid #3a3020; border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: #6a5a3a; cursor: pointer;
 }
+.equip-slot-box.has-item { border-color: #7a6a3a; }
+.equip-slot-box canvas { image-rendering: pixelated; }
 
-/* Right-click context menu */
+/* Context menu */
 #context-menu {
   position: fixed; display: none; z-index: 100;
-  background: #3b3121; border: 2px solid #5a4a2a; min-width: 160px;
-  box-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+  background: #3b3121; border: 2px solid #5a4a2a; min-width: 170px;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.7); font-family: 'VT323', monospace;
 }
 #context-menu .menu-title {
-  padding: 4px 10px; color: #ffd700; font-size: 12px; font-weight: bold;
-  background: #5a4a2a; border-bottom: 1px solid #3b3121;
+  padding: 4px 10px; color: #000; font-size: 13px; font-weight: bold;
+  background: linear-gradient(180deg, #7a6a3a, #5a4a2a);
+  border-bottom: 1px solid #3b3121;
 }
 #context-menu .menu-item {
-  padding: 4px 10px; color: #e0d0a0; font-size: 13px; cursor: pointer;
+  padding: 3px 10px; color: #e0d0a0; font-size: 14px; cursor: pointer;
 }
 #context-menu .menu-item:hover { background: #5a4a2a; color: #fff; }
 #context-menu .menu-item .action-name { color: #ffff00; }
@@ -117,77 +148,142 @@ canvas { display: block; }
 /* NPC Dialog */
 #npc-dialog {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-  width: 420px; background: rgba(50,40,20,0.95); border: 3px solid #5a4a2a;
-  border-radius: 6px; z-index: 50; display: none; padding: 0;
+  width: 440px; background: rgba(50,40,20,0.97); border: 3px solid #5a4a2a;
+  border-radius: 0; z-index: 50; display: none;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
 }
 #npc-dialog-header {
-  background: #5a4a2a; padding: 8px 14px; color: #ffd700; font-weight: bold;
-  font-size: 16px; border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #7a6a3a, #5a4a2a);
+  padding: 8px 14px; color: #ffd700; font-weight: bold; font-size: 18px;
 }
-#npc-dialog-body { padding: 14px; color: #e0d0a0; font-size: 14px; line-height: 1.5; }
+#npc-dialog-body { padding: 14px; color: #e0d0a0; font-size: 16px; line-height: 1.5; }
 #npc-dialog-options { padding: 6px 14px 14px; }
 #npc-dialog-options div {
-  color: #00ffff; cursor: pointer; padding: 3px 0; font-size: 13px;
+  color: #00aaff; cursor: pointer; padding: 4px 0; font-size: 15px;
 }
 #npc-dialog-options div:hover { color: #ffff00; }
 
 /* XP popup */
 .xp-popup {
-  position: fixed; color: #fff; font-size: 14px; font-weight: bold;
+  position: fixed; color: #fff; font-size: 16px; font-weight: bold;
   text-shadow: 1px 1px 2px #000; pointer-events: none; z-index: 30;
-  animation: xpFloat 1.5s ease-out forwards;
+  font-family: 'VT323', monospace;
+  animation: xpFloat 2s ease-out forwards;
 }
 @keyframes xpFloat {
   0% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-40px); }
+  100% { opacity: 0; transform: translateY(-50px); }
+}
+
+/* Health bar overlay */
+.health-bar-container {
+  position: absolute; pointer-events: none; z-index: 15;
+}
+.health-bar-bg {
+  width: 32px; height: 5px; background: #300; border: 1px solid #000;
+}
+.health-bar-fill {
+  height: 100%; background: #0f0; transition: width 0.2s;
+}
+.health-bar-fill.low { background: #ff0; }
+.health-bar-fill.critical { background: #f00; }
+
+/* Hit splat */
+.hit-splat {
+  position: fixed; z-index: 35; pointer-events: none;
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: bold; color: #fff;
+  text-shadow: 1px 1px 0 #000;
+  font-family: 'VT323', monospace;
+  animation: hitSplatAnim 1s ease-out forwards;
+}
+.hit-splat.damage { background: radial-gradient(circle, #cc0000 60%, #880000 100%); }
+.hit-splat.miss { background: radial-gradient(circle, #0066cc 60%, #003388 100%); }
+@keyframes hitSplatAnim {
+  0% { opacity: 1; transform: translateY(0) scale(1.2); }
+  20% { transform: translateY(-5px) scale(1); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+/* Loot pile */
+.loot-text {
+  position: fixed; z-index: 14; pointer-events: none;
+  color: #ff2222; font-size: 12px; font-family: 'VT323', monospace;
+  text-shadow: 1px 1px 0 #000; white-space: nowrap;
 }
 
 /* Loading */
 #loading {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background: #000; display: flex; align-items: center; justify-content: center;
-  flex-direction: column; z-index: 1000; color: #ffd700; font-size: 20px;
+  flex-direction: column; z-index: 1000; color: #ffd700; font-size: 22px;
+  font-family: 'VT323', monospace;
 }
-#loading-bar-bg { width: 300px; height: 20px; background: #333; border: 2px solid #5a4a2a; margin-top: 16px; border-radius: 3px; }
-#loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #c0a040, #ffd700); border-radius: 2px; transition: width 0.3s; }
+#loading-bar-bg {
+  width: 300px; height: 24px; background: #1a1206;
+  border: 2px solid #5a4a2a; margin-top: 16px; border-radius: 0;
+}
+#loading-bar {
+  width: 0%; height: 100%;
+  background: linear-gradient(90deg, #8B4513, #CD853F, #DEB887);
+  transition: width 0.3s;
+}
+#loading-text { margin-top: 8px; font-size: 14px; color: #aaa; }
 
-/* Compass */
-#compass {
-  position: fixed; top: 4px; right: 75px; width: 24px; height: 24px;
-  color: #ffd700; font-size: 14px; font-weight: bold; text-align: center;
-  line-height: 24px; z-index: 22;
+/* Tooltip */
+#tooltip {
+  position: fixed; display: none; z-index: 200;
+  background: #1a1206; border: 1px solid #5a4a2a;
+  padding: 4px 8px; color: #ff8800; font-size: 13px;
+  font-family: 'VT323', monospace; pointer-events: none;
+  white-space: nowrap;
 }
+
+/* Cursor styles */
+.cursor-attack { cursor: crosshair; }
 </style>
 </head>
 <body>
 
 <div id="loading">
-  <div>🔥 Loading LumbridgeScape...</div>
+  <div>⚔️ Loading LumbridgeScape...</div>
   <div id="loading-bar-bg"><div id="loading-bar"></div></div>
+  <div id="loading-text">Preparing world...</div>
 </div>
 
 <div id="ui-layer">
   <div id="chatbox">
+    <div id="chat-tabs">
+      <div class="chat-tab active">All</div>
+      <div class="chat-tab">Game</div>
+      <div class="chat-tab">Public</div>
+    </div>
     <div id="chat-log"></div>
     <div id="chat-input-row">
       <input id="chat-input" placeholder="Press Enter to chat..." />
     </div>
   </div>
 
-  <div id="minimap"><canvas id="minimap-canvas" width="160" height="160"></canvas></div>
-  <div id="compass">N</div>
-
-  <div id="tab-bar">
-    <div class="tab-btn active" data-tab="inv">🎒 Inv</div>
-    <div class="tab-btn" data-tab="equip">⚔️ Equip</div>
-    <div class="tab-btn" data-tab="stats">📊 Stats</div>
+  <div id="minimap">
+    <canvas id="minimap-canvas" width="172" height="172"></canvas>
+    <div id="minimap-frame"></div>
   </div>
-  <div id="inv-panel"></div>
-  <div id="equip-display"></div>
-  <div id="stats-panel"></div>
+
+  <div id="side-panel">
+    <div id="tab-bar">
+      <div class="tab-btn active" data-tab="inv">⚔ Inv</div>
+      <div class="tab-btn" data-tab="equip">👤 Worn</div>
+      <div class="tab-btn" data-tab="stats">📊 Stats</div>
+    </div>
+    <div id="inv-panel"></div>
+    <div id="equip-panel"></div>
+    <div id="stats-panel"></div>
+  </div>
 
   <div id="context-menu"></div>
   <div id="npc-dialog"></div>
+  <div id="tooltip"></div>
 </div>
 
 <script type="importmap">
@@ -203,33 +299,411 @@ canvas { display: block; }
 import * as THREE from 'three';
 
 // ============================================================
+// PIXEL ART ITEM ICON RENDERER
+// ============================================================
+const ItemIcons = {
+  cache: {},
+
+  draw(name) {
+    if (this.cache[name]) return this.cache[name];
+    const c = document.createElement('canvas');
+    c.width = 32; c.height = 32;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const draw = this.icons[name];
+    if (draw) draw(ctx);
+    this.cache[name] = c;
+    return c;
+  },
+
+  icons: {
+    'Logs': (ctx) => {
+      // OSRS-style log: brown cylinder with bark texture and visible rings
+      const colors = { dark: '#5C3A1E', mid: '#7A5230', light: '#96653A', ring: '#4A2E16', highlight: '#B8845A' };
+      // Main log body
+      ctx.fillStyle = colors.mid;
+      ctx.fillRect(4, 10, 24, 12);
+      // Bark texture lines
+      ctx.fillStyle = colors.dark;
+      for (let y = 11; y < 22; y += 3) {
+        ctx.fillRect(5, y, 22, 1);
+      }
+      // Top highlight
+      ctx.fillStyle = colors.light;
+      ctx.fillRect(5, 10, 22, 2);
+      // End grain (circle at right end)
+      ctx.fillStyle = colors.ring;
+      ctx.fillRect(25, 11, 3, 10);
+      ctx.fillStyle = colors.highlight;
+      ctx.fillRect(26, 13, 1, 6);
+      // Ring detail on end
+      ctx.fillStyle = colors.dark;
+      ctx.fillRect(26, 14, 1, 1);
+      ctx.fillRect(26, 18, 1, 1);
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(4, 22, 24, 2);
+    },
+
+    'Oak logs': (ctx) => {
+      ctx.fillStyle = '#6B4226';
+      ctx.fillRect(3, 9, 26, 14);
+      ctx.fillStyle = '#8B5E3C';
+      ctx.fillRect(4, 9, 24, 3);
+      ctx.fillStyle = '#503018';
+      for (let y = 12; y < 23; y += 3) ctx.fillRect(4, y, 24, 1);
+      ctx.fillStyle = '#3A2210';
+      ctx.fillRect(26, 10, 3, 12);
+      ctx.fillStyle = '#9B7050';
+      ctx.fillRect(27, 12, 1, 8);
+      ctx.fillStyle = 'rgba(0,0,0,0.3)';
+      ctx.fillRect(3, 23, 26, 2);
+    },
+
+    'Bronze axe': (ctx) => {
+      // Handle
+      ctx.fillStyle = '#6B4226';
+      ctx.fillRect(8, 8, 3, 20);
+      ctx.fillStyle = '#8B5E3C';
+      ctx.fillRect(9, 8, 1, 20);
+      // Axe head
+      ctx.fillStyle = '#CD7F32';
+      ctx.fillRect(11, 6, 10, 4);
+      ctx.fillRect(13, 4, 8, 2);
+      ctx.fillRect(15, 2, 6, 2);
+      ctx.fillRect(11, 10, 8, 3);
+      // Highlight
+      ctx.fillStyle = '#E8A84C';
+      ctx.fillRect(14, 4, 6, 1);
+      ctx.fillRect(12, 6, 8, 1);
+      // Edge
+      ctx.fillStyle = '#A06020';
+      ctx.fillRect(20, 3, 1, 6);
+      ctx.fillRect(18, 10, 1, 3);
+    },
+
+    'Bones': (ctx) => {
+      ctx.fillStyle = '#E8DCC8';
+      // Bone shaft
+      ctx.fillRect(12, 6, 8, 20);
+      // Top knobs
+      ctx.fillRect(8, 4, 7, 6);
+      ctx.fillRect(17, 4, 7, 6);
+      // Bottom knobs
+      ctx.fillRect(8, 22, 7, 6);
+      ctx.fillRect(17, 22, 7, 6);
+      // Shadow/depth
+      ctx.fillStyle = '#C8B8A0';
+      ctx.fillRect(12, 8, 2, 16);
+      ctx.fillRect(8, 6, 2, 3);
+      ctx.fillRect(8, 24, 2, 3);
+      // Highlight
+      ctx.fillStyle = '#FFF8F0';
+      ctx.fillRect(16, 7, 2, 14);
+      ctx.fillRect(20, 5, 2, 3);
+      ctx.fillRect(20, 23, 2, 3);
+    },
+
+    'Feather': (ctx) => {
+      // Quill
+      ctx.fillStyle = '#F5F0E0';
+      ctx.fillRect(14, 4, 2, 24);
+      ctx.fillStyle = '#E0D8C0';
+      ctx.fillRect(15, 4, 1, 24);
+      // Barbs left
+      ctx.fillStyle = '#D0D0D0';
+      for (let y = 5; y < 22; y += 2) {
+        ctx.fillRect(14 - (y - 5) / 3, y, (y - 5) / 3 + 1, 2);
+      }
+      // Barbs right
+      for (let y = 5; y < 22; y += 2) {
+        ctx.fillRect(16, y, (y - 5) / 3 + 1, 2);
+      }
+      // Tip
+      ctx.fillStyle = '#C0B8A0';
+      ctx.fillRect(14, 26, 2, 2);
+    },
+
+    'Coins': (ctx) => {
+      // Stack of gold coins
+      ctx.fillStyle = '#DAA520';
+      ctx.beginPath();
+      ctx.arc(16, 18, 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFD700';
+      ctx.beginPath();
+      ctx.arc(16, 17, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFC000';
+      ctx.beginPath();
+      ctx.arc(16, 16, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // GP symbol
+      ctx.fillStyle = '#B8860B';
+      ctx.fillRect(14, 13, 4, 7);
+      ctx.fillStyle = '#FFD700';
+      ctx.fillRect(15, 14, 2, 5);
+    },
+
+    'Raw shrimps': (ctx) => {
+      ctx.fillStyle = '#D4A08A';
+      // Body curve
+      ctx.fillRect(10, 8, 12, 5);
+      ctx.fillRect(8, 12, 10, 4);
+      ctx.fillRect(6, 15, 8, 3);
+      // Tail
+      ctx.fillStyle = '#C09080';
+      ctx.fillRect(4, 17, 6, 4);
+      ctx.fillRect(2, 20, 5, 3);
+      // Head
+      ctx.fillStyle = '#E0B0A0';
+      ctx.fillRect(18, 7, 6, 5);
+      // Eye
+      ctx.fillStyle = '#000';
+      ctx.fillRect(22, 8, 2, 2);
+      // Legs
+      ctx.fillStyle = '#C09080';
+      for (let i = 0; i < 4; i++) {
+        ctx.fillRect(12 + i * 3, 13, 1, 5);
+      }
+    },
+
+    'Cooked shrimps': (ctx) => {
+      ctx.fillStyle = '#CC6633';
+      ctx.fillRect(10, 8, 12, 5);
+      ctx.fillRect(8, 12, 10, 4);
+      ctx.fillRect(6, 15, 8, 3);
+      ctx.fillStyle = '#AA5522';
+      ctx.fillRect(4, 17, 6, 4);
+      ctx.fillRect(2, 20, 5, 3);
+      ctx.fillStyle = '#DD7744';
+      ctx.fillRect(18, 7, 6, 5);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(22, 8, 2, 2);
+    },
+
+    'Copper ore': (ctx) => {
+      // Rock shape
+      ctx.fillStyle = '#8B6D3E';
+      ctx.fillRect(6, 10, 20, 16);
+      ctx.fillRect(8, 8, 16, 2);
+      ctx.fillRect(10, 6, 12, 2);
+      // Copper veins
+      ctx.fillStyle = '#CD7F32';
+      ctx.fillRect(10, 12, 5, 4);
+      ctx.fillRect(18, 14, 4, 5);
+      ctx.fillRect(12, 20, 6, 3);
+      // Highlights
+      ctx.fillStyle = '#E8A84C';
+      ctx.fillRect(11, 13, 2, 2);
+      ctx.fillRect(19, 15, 2, 2);
+      // Shadow
+      ctx.fillStyle = '#6B4D2E';
+      ctx.fillRect(6, 24, 20, 2);
+    },
+
+    'Tin ore': (ctx) => {
+      ctx.fillStyle = '#808080';
+      ctx.fillRect(6, 10, 20, 16);
+      ctx.fillRect(8, 8, 16, 2);
+      ctx.fillRect(10, 6, 12, 2);
+      // Tin veins
+      ctx.fillStyle = '#A8A8A8';
+      ctx.fillRect(10, 12, 5, 4);
+      ctx.fillRect(18, 14, 4, 5);
+      ctx.fillRect(12, 20, 6, 3);
+      ctx.fillStyle = '#C0C0C0';
+      ctx.fillRect(11, 13, 2, 2);
+      ctx.fillRect(19, 15, 2, 2);
+      ctx.fillStyle = '#606060';
+      ctx.fillRect(6, 24, 20, 2);
+    },
+
+    'Bronze bar': (ctx) => {
+      ctx.fillStyle = '#CD7F32';
+      ctx.fillRect(6, 12, 20, 10);
+      ctx.fillStyle = '#E8A84C';
+      ctx.fillRect(7, 12, 18, 3);
+      ctx.fillStyle = '#A06020';
+      ctx.fillRect(6, 20, 20, 2);
+      ctx.fillRect(6, 12, 2, 10);
+      ctx.fillStyle = '#FFD080';
+      ctx.fillRect(8, 13, 6, 1);
+    },
+
+    "Bird's nest": (ctx) => {
+      // Nest base (twigs)
+      ctx.fillStyle = '#6B4226';
+      ctx.fillRect(4, 18, 24, 8);
+      ctx.fillRect(6, 16, 20, 2);
+      ctx.fillStyle = '#8B5E3C';
+      ctx.fillRect(6, 18, 2, 6);
+      ctx.fillRect(14, 18, 2, 6);
+      ctx.fillRect(22, 18, 2, 6);
+      // Inner bowl
+      ctx.fillStyle = '#5C3A1E';
+      ctx.fillRect(8, 16, 16, 4);
+      // Eggs
+      ctx.fillStyle = '#E8E0D0';
+      ctx.fillRect(10, 14, 4, 5);
+      ctx.fillRect(16, 14, 4, 5);
+      ctx.fillStyle = '#D0C8B8';
+      ctx.fillRect(13, 15, 4, 4);
+      // Spots on eggs
+      ctx.fillStyle = '#B0A090';
+      ctx.fillRect(11, 15, 1, 1);
+      ctx.fillRect(17, 16, 1, 1);
+    },
+
+    'Raw chicken': (ctx) => {
+      ctx.fillStyle = '#FFD0B0';
+      ctx.fillRect(8, 8, 16, 14);
+      ctx.fillRect(10, 6, 12, 2);
+      ctx.fillRect(12, 22, 8, 4);
+      ctx.fillStyle = '#EEC0A0';
+      ctx.fillRect(8, 10, 4, 8);
+      ctx.fillRect(20, 10, 4, 8);
+      ctx.fillStyle = '#FFE0C0';
+      ctx.fillRect(12, 9, 8, 4);
+    },
+
+    'Cooked chicken': (ctx) => {
+      ctx.fillStyle = '#C08040';
+      ctx.fillRect(8, 8, 16, 14);
+      ctx.fillRect(10, 6, 12, 2);
+      ctx.fillRect(12, 22, 8, 4);
+      ctx.fillStyle = '#A06830';
+      ctx.fillRect(8, 10, 4, 8);
+      ctx.fillRect(20, 10, 4, 8);
+      ctx.fillStyle = '#D09050';
+      ctx.fillRect(12, 9, 8, 4);
+    },
+
+    'Bronze pickaxe': (ctx) => {
+      ctx.fillStyle = '#6B4226';
+      ctx.fillRect(6, 6, 3, 22);
+      ctx.fillStyle = '#8B5E3C';
+      ctx.fillRect(7, 6, 1, 22);
+      ctx.fillStyle = '#CD7F32';
+      ctx.fillRect(9, 2, 14, 4);
+      ctx.fillRect(21, 4, 4, 3);
+      ctx.fillRect(23, 6, 3, 2);
+      ctx.fillStyle = '#E8A84C';
+      ctx.fillRect(10, 2, 12, 1);
+      ctx.fillStyle = '#A06020';
+      ctx.fillRect(9, 5, 14, 1);
+    },
+
+    'Fishing rod': (ctx) => {
+      // Rod
+      ctx.fillStyle = '#6B4226';
+      ctx.fillRect(14, 2, 2, 26);
+      ctx.fillStyle = '#8B5E3C';
+      ctx.fillRect(15, 2, 1, 26);
+      // Line
+      ctx.fillStyle = '#AAA';
+      ctx.fillRect(16, 2, 1, 4);
+      ctx.fillRect(17, 6, 1, 4);
+      ctx.fillRect(18, 10, 1, 4);
+      ctx.fillRect(19, 14, 1, 4);
+      // Hook
+      ctx.fillStyle = '#888';
+      ctx.fillRect(19, 18, 1, 4);
+      ctx.fillRect(18, 22, 1, 2);
+      // Handle
+      ctx.fillStyle = '#4A2E16';
+      ctx.fillRect(13, 24, 4, 4);
+    },
+
+    'Goblin mail': (ctx) => {
+      ctx.fillStyle = '#3A5A20';
+      ctx.fillRect(8, 6, 16, 18);
+      ctx.fillRect(4, 8, 4, 12);
+      ctx.fillRect(24, 8, 4, 12);
+      ctx.fillStyle = '#4A7A30';
+      ctx.fillRect(10, 7, 12, 4);
+      ctx.fillStyle = '#2A4A10';
+      ctx.fillRect(8, 22, 16, 2);
+      // Chain links
+      ctx.fillStyle = '#6A9A40';
+      for (let y = 10; y < 22; y += 3) {
+        for (let x = 10; x < 22; x += 3) {
+          ctx.fillRect(x, y, 2, 2);
+        }
+      }
+    },
+  }
+};
+
+// ============================================================
 // GAME STATE
 // ============================================================
 const State = {
   inventory: [],
-  equipment: { weapon: { name: 'Bronze Axe', icon: '🪓', type: 'axe' } },
+  equipment: { weapon: { name: 'Bronze axe', icon: 'Bronze axe', type: 'axe', attackBonus: 4 } },
   skills: {
-    woodcutting: { level: 1, xp: 0 },
-    attack: { level: 1, xp: 0 },
-    hitpoints: { level: 10, xp: 1154 },
+    attack: { level: 1, xp: 0, icon: '⚔️' },
+    strength: { level: 1, xp: 0, icon: '💪' },
+    defence: { level: 1, xp: 0, icon: '🛡️' },
+    hitpoints: { level: 10, xp: 1154, icon: '❤️' },
+    mining: { level: 1, xp: 0, icon: '⛏️' },
+    fishing: { level: 1, xp: 0, icon: '🐟' },
+    cooking: { level: 1, xp: 0, icon: '🍳' },
+    woodcutting: { level: 1, xp: 0, icon: '🪓' },
   },
+  currentHP: 10,
+  maxHP: 10,
   chopTarget: null,
   isChopping: false,
   chopTimer: 0,
+  mineTarget: null,
+  isMining: false,
+  mineTimer: 0,
+  isFishing: false,
+  fishTimer: 0,
+  combatTarget: null,
+  inCombat: false,
+  combatTimer: 0,
+  totalLogsChopped: 0,
 };
 
-function addItem(name, icon, count = 1) {
+function addItem(name, count = 1) {
   const existing = State.inventory.find(i => i.name === name);
   if (existing) existing.count += count;
-  else State.inventory.push({ name, icon, count });
+  else if (State.inventory.length < 28) State.inventory.push({ name, count });
+  else { chatMsg("Your inventory is full!", 'game'); return false; }
   refreshInventory();
+  return true;
+}
+
+function removeItem(name, count = 1) {
+  const idx = State.inventory.findIndex(i => i.name === name);
+  if (idx === -1) return false;
+  State.inventory[idx].count -= count;
+  if (State.inventory[idx].count <= 0) State.inventory.splice(idx, 1);
+  refreshInventory();
+  return true;
+}
+
+function hasItem(name) {
+  return State.inventory.some(i => i.name === name);
 }
 
 function xpForLevel(l) { let t = 0; for (let i = 1; i < l; i++) t += Math.floor(i + 300 * Math.pow(2, i / 7)); return Math.floor(t / 4); }
 
 function addXP(skill, amount) {
+  const prev = State.skills[skill].level;
   State.skills[skill].xp += amount;
-  while (State.skills[skill].xp >= xpForLevel(State.skills[skill].level + 1)) State.skills[skill].level++;
+  while (State.skills[skill].xp >= xpForLevel(State.skills[skill].level + 1)) {
+    State.skills[skill].level++;
+  }
+  if (State.skills[skill].level > prev) {
+    chatMsg(`Congratulations! You've advanced a ${skill.charAt(0).toUpperCase() + skill.slice(1)} level! You are now level ${State.skills[skill].level}.`, 'skill');
+    if (skill === 'hitpoints') {
+      State.maxHP = State.skills.hitpoints.level;
+      State.currentHP = State.maxHP;
+    }
+  }
   showXPDrop(amount, skill);
   refreshStats();
 }
@@ -244,11 +718,13 @@ function chatMsg(text, cls = '') {
   d.textContent = text;
   chatLog.appendChild(d);
   chatLog.scrollTop = chatLog.scrollHeight;
+  // Keep chat history manageable
+  while (chatLog.children.length > 100) chatLog.removeChild(chatLog.firstChild);
 }
 
 document.getElementById('chat-input').addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.value.trim()) {
-    chatMsg(e.target.value);
+    chatMsg(e.target.value, 'player');
     e.target.value = '';
   }
 });
@@ -259,11 +735,36 @@ document.getElementById('chat-input').addEventListener('keydown', e => {
 function showXPDrop(amount, skill) {
   const el = document.createElement('div');
   el.className = 'xp-popup';
-  el.textContent = `+${amount} ${skill} XP`;
-  el.style.left = '50%';
-  el.style.top = '45%';
+  const icon = State.skills[skill]?.icon || '✨';
+  el.innerHTML = `${icon} +${amount} xp`;
+  el.style.left = (window.innerWidth / 2 - 40) + 'px';
+  el.style.top = '40%';
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1500);
+  setTimeout(() => el.remove(), 2000);
+}
+
+// ============================================================
+// HIT SPLAT
+// ============================================================
+function showHitSplat(target3d, damage) {
+  const el = document.createElement('div');
+  el.className = 'hit-splat ' + (damage > 0 ? 'damage' : 'miss');
+  el.textContent = damage;
+  const pos = toScreenPos(target3d.position);
+  el.style.left = (pos.x - 14) + 'px';
+  el.style.top = (pos.y - 30) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+function toScreenPos(worldPos) {
+  const v = worldPos.clone();
+  v.y += 3;
+  v.project(camera);
+  return {
+    x: (v.x * 0.5 + 0.5) * window.innerWidth,
+    y: (-v.y * 0.5 + 0.5) * window.innerHeight
+  };
 }
 
 // ============================================================
@@ -271,7 +772,7 @@ function showXPDrop(amount, skill) {
 // ============================================================
 const tabBar = document.getElementById('tab-bar');
 const invPanel = document.getElementById('inv-panel');
-const equipDisplay = document.getElementById('equip-display');
+const equipPanel = document.getElementById('equip-panel');
 const statsPanel = document.getElementById('stats-panel');
 
 tabBar.addEventListener('click', e => {
@@ -281,7 +782,7 @@ tabBar.addEventListener('click', e => {
   btn.classList.add('active');
   const tab = btn.dataset.tab;
   invPanel.style.display = tab === 'inv' ? 'block' : 'none';
-  equipDisplay.style.display = tab === 'equip' ? 'block' : 'none';
+  equipPanel.style.display = tab === 'equip' ? 'block' : 'none';
   statsPanel.style.display = tab === 'stats' ? 'block' : 'none';
   if (tab === 'inv') refreshInventory();
   if (tab === 'equip') refreshEquip();
@@ -289,40 +790,102 @@ tabBar.addEventListener('click', e => {
 });
 
 function refreshInventory() {
-  let html = '<div id="inv-header">Inventory</div><div id="inv-grid">';
-  // Equipped weapon always shown first
+  let html = '<div id="inv-grid">';
+  // Equipped weapon first
   if (State.equipment.weapon) {
-    html += `<div class="inv-slot equipped"><span class="item-icon">${State.equipment.weapon.icon}</span><span class="item-count">E</span></div>`;
+    const ic = ItemIcons.draw(State.equipment.weapon.icon);
+    html += `<div class="inv-slot equipped"><canvas class="item-canvas" data-item="${State.equipment.weapon.name}" width="32" height="32"></canvas><span class="item-count">E</span></div>`;
   }
   for (const item of State.inventory) {
-    html += `<div class="inv-slot"><span class="item-icon">${item.icon}</span><span class="item-count">${item.count > 1 ? item.count : ''}</span></div>`;
+    html += `<div class="inv-slot"><canvas class="item-canvas" data-item="${item.name}" width="32" height="32"></canvas>`;
+    if (item.count > 1) html += `<span class="item-count">${item.count >= 100000 ? Math.floor(item.count/1000)+'K' : item.count}</span>`;
+    html += `<span class="item-name">${item.name}</span></div>`;
   }
   const total = (State.equipment.weapon ? 1 : 0) + State.inventory.length;
   for (let i = total; i < 28; i++) html += '<div class="inv-slot"></div>';
   html += '</div>';
   invPanel.innerHTML = html;
+
+  // Render icons to canvases
+  invPanel.querySelectorAll('.item-canvas').forEach(c => {
+    const name = c.dataset.item;
+    const src = ItemIcons.draw(name);
+    if (src) {
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(src, 0, 0);
+    }
+  });
+
+  // Right-click on inventory items
+  invPanel.querySelectorAll('.inv-slot').forEach(slot => {
+    slot.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const canvas = slot.querySelector('.item-canvas');
+      if (!canvas) return;
+      const itemName = canvas.dataset.item;
+      const menuItems = [
+        { label: 'Use', action: 'use-item' },
+        { label: 'Examine', action: 'examine-item' },
+        { label: 'Drop', action: 'drop-item' },
+        { label: 'Cancel', action: 'cancel' },
+      ];
+      // Cookable items
+      if (itemName === 'Raw shrimps' || itemName === 'Raw chicken') {
+        menuItems.unshift({ label: 'Cook', action: 'cook-item' });
+      }
+      showContextMenu(e.clientX, e.clientY, itemName, menuItems, itemName);
+    });
+  });
 }
 
 function refreshEquip() {
   const w = State.equipment.weapon;
-  equipDisplay.innerHTML = `
-    <div style="font-weight:bold;margin-bottom:8px;color:#ffd700">Equipment</div>
-    <div style="color:#c0a040;margin-bottom:4px">Weapon</div>
-    <div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;background:rgba(0,0,0,0.4);border:2px solid #5a4a2a;border-radius:4px;font-size:28px">${w ? w.icon : ''}</div>
-    <div style="color:#ffd700;margin-top:4px">${w ? w.name : 'None'}</div>
-  `;
+  let html = `<div style="color:#ffd700;font-size:16px;padding:6px 0">Equipment</div>`;
+  html += '<div class="equip-grid">';
+  html += '<div class="equip-slot-box">Head</div>';
+  html += '<div class="equip-slot-box">Cape</div>';
+  html += '<div class="equip-slot-box">Neck</div>';
+  html += `<div class="equip-slot-box ${w ? 'has-item' : ''}"><canvas class="equip-canvas" data-item="${w ? w.icon : ''}" width="32" height="32"></canvas></div>`;
+  html += '<div class="equip-slot-box">Body</div>';
+  html += '<div class="equip-slot-box">Shield</div>';
+  html += '<div class="equip-slot-box">Legs</div>';
+  html += '<div class="equip-slot-box">Hands</div>';
+  html += '<div class="equip-slot-box">Feet</div>';
+  html += '</div>';
+  if (w) html += `<div style="color:#ff8800;margin-top:8px;font-size:14px">${w.name}<br><span style="color:#aaa;font-size:12px">Attack: +${w.attackBonus || 0}</span></div>`;
+  equipPanel.innerHTML = html;
+
+  equipPanel.querySelectorAll('.equip-canvas').forEach(c => {
+    const name = c.dataset.item;
+    if (!name) return;
+    const src = ItemIcons.draw(name);
+    if (src) {
+      const ctx = c.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(src, 0, 0);
+    }
+  });
 }
 
 function refreshStats() {
-  let html = '';
+  let html = `<div style="color:#ffd700;font-size:14px;padding:4px;border-bottom:1px solid #5a4a2a;margin-bottom:4px">Skills</div>`;
   for (const [name, s] of Object.entries(State.skills)) {
     const next = xpForLevel(s.level + 1);
-    html += `<div class="stat-row"><span class="stat-name">${name.charAt(0).toUpperCase() + name.slice(1)}</span><span>Lvl ${s.level} (${s.xp}/${next})</span></div>`;
+    const pct = Math.min(100, ((s.xp - xpForLevel(s.level)) / (next - xpForLevel(s.level))) * 100);
+    html += `<div class="stat-row">
+      <span class="stat-name">${s.icon} ${name.charAt(0).toUpperCase() + name.slice(1)}</span>
+      <span class="stat-level">${s.level}</span>
+    </div>
+    <div style="width:100%;height:3px;background:#1a1206;margin:0 4px 3px 4px;border-radius:1px">
+      <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#1a8a1a,#2abb2a);border-radius:1px"></div>
+    </div>`;
   }
+  html += `<div style="color:#aaa;font-size:12px;padding:6px 4px;border-top:1px solid #5a4a2a;margin-top:4px">Total Level: ${Object.values(State.skills).reduce((a, s) => a + s.level, 0)}</div>`;
   statsPanel.innerHTML = html;
 }
 
-// Show inv by default
 invPanel.style.display = 'block';
 refreshInventory();
 
@@ -330,36 +893,70 @@ refreshInventory();
 // CONTEXT MENU
 // ============================================================
 const contextMenu = document.getElementById('context-menu');
+let currentMenuContext = null;
 
-function showContextMenu(x, y, title, items) {
+function showContextMenu(x, y, title, items, contextData = null) {
+  currentMenuContext = contextData;
   let html = `<div class="menu-title">${title}</div>`;
   for (const item of items) {
     html += `<div class="menu-item" data-action="${item.action}"><span class="action-name">${item.label}</span> ${item.target || ''}</div>`;
   }
   contextMenu.innerHTML = html;
   contextMenu.style.display = 'block';
-  contextMenu.style.left = Math.min(x, window.innerWidth - 180) + 'px';
-  contextMenu.style.top = Math.min(y, window.innerHeight - 150) + 'px';
+  contextMenu.style.left = Math.min(x, window.innerWidth - 190) + 'px';
+  contextMenu.style.top = Math.min(y, window.innerHeight - items.length * 24 - 30) + 'px';
 
   contextMenu.querySelectorAll('.menu-item').forEach(el => {
     el.addEventListener('click', () => {
       const action = el.dataset.action;
-      if (item_actions[action]) item_actions[action](title);
+      if (item_actions[action]) item_actions[action](title, currentMenuContext);
       contextMenu.style.display = 'none';
     });
   });
 }
 
 const item_actions = {
-  examine: (name) => chatMsg(`${name}: Nothing interesting.`, 'system'),
+  examine: (name) => {
+    const examines = {
+      'Tree': "A tree. I can chop this down for logs.",
+      'Oak Tree': "A sturdy oak tree.",
+      'Copper rock': "A rock containing copper ore.",
+      'Tin rock': "A rock containing tin ore.",
+      'Fishing spot': "I can see fish swimming in the water.",
+      'Lumbridge Castle': "The grand castle of Lumbridge.",
+      'General Store': "A shop where I can buy supplies.",
+      'Lumbridge Church': "The Lumbridge church.",
+    };
+    chatMsg(examines[name] || `${name}: Nothing interesting.`, 'system');
+  },
+  'examine-item': (name) => chatMsg(`${name}: A useful item.`, 'system'),
   'talk-to': (name) => openNPCDialog(name),
-  'chop-down': (name) => startChopping(name),
+  'chop-down': (name, ctx) => { /* handled by click */ },
+  'mine': (name, ctx) => { /* handled by click */ },
+  'net-fish': () => { /* handled by click */ },
+  'attack': (name, ctx) => { /* handled by click */ },
   'walk-here': () => {},
+  'drop-item': (name) => { removeItem(name); chatMsg(`You drop the ${name}.`, 'system'); },
+  'cook-item': (name) => {
+    // Check if near fire/range
+    const nearRange = player.position.distanceTo(cookingRange.position) < 5;
+    if (!nearRange) { chatMsg("You need to be near a cooking range or fire.", 'game'); return; }
+    if (name === 'Raw shrimps' && removeItem('Raw shrimps')) {
+      addItem('Cooked shrimps');
+      addXP('cooking', 30);
+      chatMsg("You cook the shrimps.", 'skill');
+    } else if (name === 'Raw chicken' && removeItem('Raw chicken')) {
+      addItem('Cooked chicken');
+      addXP('cooking', 30);
+      chatMsg("You cook the chicken.", 'skill');
+    }
+  },
   cancel: () => {},
 };
 
 document.addEventListener('click', e => {
   if (!contextMenu.contains(e.target)) contextMenu.style.display = 'none';
+  if (npcDialog.style.display === 'block' && !npcDialog.contains(e.target)) npcDialog.style.display = 'none';
 });
 
 // ============================================================
@@ -370,24 +967,38 @@ const NPC_DIALOGS = {
   'Hans': {
     text: "Hello adventurer! Welcome to Lumbridge. I've been here for... well, longer than I can remember.",
     options: [
-      { text: "How long have you been here?", response: "I've been walking around this castle for over 20 years now. My feet hurt." },
-      { text: "Can you tell me about this place?", response: "This is Lumbridge! The greatest town in all of Gielinor. Well... it's a town anyway." },
+      { text: "How long have you been here?", response: "I've been walking around this castle for over 20 years now. My feet hurt a bit." },
+      { text: "Can you tell me about this place?", response: "This is Lumbridge! The greatest town in Gielinor. Mind the chickens — they fight back." },
       { text: "Goodbye.", response: null }
     ]
   },
   'Cook': {
-    text: "What am I to do? I need to prepare a cake for Duke Horacio's birthday party!",
+    text: "What am I to do?! I need to prepare a cake for Duke Horacio's birthday party, but I've run out of ingredients!",
     options: [
-      { text: "What do you need?", response: "I need an egg, a pot of flour, and a bucket of milk. Can you get them for me?" },
+      { text: "What do you need?", response: "I need an egg, a pot of flour, and a bucket of milk. Please, can you help?" },
       { text: "I'll come back later.", response: null }
     ]
   },
   'Guide': {
-    text: "Greetings! I'm the Lumbridge Guide. Need any help finding your way around?",
+    text: "Greetings! I'm the Lumbridge Guide. Need any help finding your way?",
     options: [
-      { text: "Where can I chop trees?", response: "Trees are all around! Just right-click one and select 'Chop down'. Make sure you have an axe equipped!" },
-      { text: "What should I do first?", response: "Try chopping some trees for Woodcutting XP. You've already got an axe — get to work!" },
+      { text: "Where can I train?", response: "Try the chickens east of here for combat XP. Mine rocks south of the castle. Fish in the river!" },
+      { text: "What should I do first?", response: "Chop trees for Woodcutting, mine rocks for Mining, fish shrimps for Fishing. Level up everything!" },
       { text: "Thanks, bye!", response: null }
+    ]
+  },
+  'Bob': {
+    text: "Welcome to Bob's Brilliant Axes! Do you need anything?",
+    options: [
+      { text: "Can you repair my axe?", response: "Your bronze axe looks fine to me! Come back when you've got something worth repairing." },
+      { text: "Goodbye.", response: null }
+    ]
+  },
+  'Father Aereck': {
+    text: "Welcome to the church of Lumbridge. How may I help you, my child?",
+    options: [
+      { text: "Can you bless me?", response: "May Saradomin protect you on your travels, adventurer." },
+      { text: "Goodbye.", response: null }
     ]
   }
 };
@@ -406,10 +1017,7 @@ function openNPCDialog(name) {
   npcDialog.querySelectorAll('[data-opt]').forEach(el => {
     el.addEventListener('click', () => {
       const opt = d.options[parseInt(el.dataset.opt)];
-      if (opt.response === null) {
-        npcDialog.style.display = 'none';
-        return;
-      }
+      if (opt.response === null) { npcDialog.style.display = 'none'; return; }
       chatMsg(`${name}: ${opt.response}`, 'npc');
       npcDialog.style.display = 'none';
     });
@@ -420,48 +1028,73 @@ function openNPCDialog(name) {
 // THREE.JS SCENE
 // ============================================================
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.Fog(0x87CEEB, 80, 200);
+scene.background = new THREE.Color(0x6CB4EE);
+scene.fog = new THREE.FogExp2(0x8CBEE8, 0.006);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 document.body.appendChild(renderer.domElement);
 
-// Camera state
 let cameraAngle = Math.PI * 0.75;
-let cameraPitch = 0.7;
-let cameraDistance = 18;
+let cameraPitch = 0.65;
+let cameraDistance = 16;
 
-// Lights
-const ambientLight = new THREE.AmbientLight(0x606070, 0.8);
+// Lights - warm OSRS sunshine
+const ambientLight = new THREE.AmbientLight(0x8090a0, 0.6);
 scene.add(ambientLight);
 
-const sunLight = new THREE.DirectionalLight(0xffeedd, 1.8);
-sunLight.position.set(50, 80, 30);
+const sunLight = new THREE.DirectionalLight(0xffeedd, 2.0);
+sunLight.position.set(60, 100, 40);
 sunLight.castShadow = true;
-sunLight.shadow.camera.left = -60;
-sunLight.shadow.camera.right = 60;
-sunLight.shadow.camera.top = 60;
-sunLight.shadow.camera.bottom = -60;
+sunLight.shadow.camera.left = -80;
+sunLight.shadow.camera.right = 80;
+sunLight.shadow.camera.top = 80;
+sunLight.shadow.camera.bottom = -80;
 sunLight.shadow.mapSize.width = 2048;
 sunLight.shadow.mapSize.height = 2048;
+sunLight.shadow.bias = -0.001;
 scene.add(sunLight);
 
+const fillLight = new THREE.DirectionalLight(0x8899aa, 0.4);
+fillLight.position.set(-30, 40, -20);
+scene.add(fillLight);
+
 // ============================================================
-// TERRAIN
+// TERRAIN - OSRS-style green with variation
 // ============================================================
+function generateGrassTexture() {
+  const size = 128;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const r = Math.random();
+      const noise = Math.sin(x * 0.3) * Math.cos(y * 0.3) * 0.1;
+      // OSRS grass colors: dark green base with yellow-green variation
+      data[i] = 45 + r * 25 + noise * 20;      // R
+      data[i+1] = 95 + r * 45 + noise * 30;     // G
+      data[i+2] = 25 + r * 15;                   // B
+      data[i+3] = 255;
+    }
+  }
+  return data;
+}
+
 const grassTexData = generateGrassTexture();
-const grassTex = new THREE.DataTexture(grassTexData, 64, 64, THREE.RGBAFormat);
+const grassTex = new THREE.DataTexture(grassTexData, 128, 128, THREE.RGBAFormat);
 grassTex.wrapS = grassTex.wrapT = THREE.RepeatWrapping;
-grassTex.repeat.set(40, 40);
+grassTex.repeat.set(50, 50);
+grassTex.magFilter = THREE.NearestFilter;
 grassTex.needsUpdate = true;
 
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(200, 200),
+  new THREE.PlaneGeometry(250, 250, 20, 20),
   new THREE.MeshLambertMaterial({ map: grassTex })
 );
 ground.rotation.x = -Math.PI / 2;
@@ -469,124 +1102,363 @@ ground.receiveShadow = true;
 ground.userData = { type: 'ground' };
 scene.add(ground);
 
-function generateGrassTexture() {
-  const size = 64;
+// Dirt paths - OSRS brown
+function createPath(x, z, w, d) {
+  const pathTex = createDirtTexture();
+  const p = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, d),
+    new THREE.MeshLambertMaterial({ map: pathTex })
+  );
+  p.rotation.x = -Math.PI / 2;
+  p.position.set(x, 0.03, z);
+  p.receiveShadow = true;
+  scene.add(p);
+  return p;
+}
+
+function createDirtTexture() {
+  const size = 32;
   const data = new Uint8Array(size * size * 4);
   for (let i = 0; i < size * size; i++) {
     const r = Math.random();
-    data[i * 4] = 40 + r * 30;
-    data[i * 4 + 1] = 100 + r * 50;
-    data[i * 4 + 2] = 30 + r * 20;
-    data[i * 4 + 3] = 255;
+    data[i*4] = 130 + r * 30;
+    data[i*4+1] = 100 + r * 25;
+    data[i*4+2] = 60 + r * 20;
+    data[i*4+3] = 255;
   }
-  return data;
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 4);
+  tex.magFilter = THREE.NearestFilter;
+  tex.needsUpdate = true;
+  return tex;
 }
 
-// Path (dirt)
-const pathGeo = new THREE.PlaneGeometry(6, 60);
-const pathMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
-const path1 = new THREE.Mesh(pathGeo, pathMat);
-path1.rotation.x = -Math.PI / 2;
-path1.position.set(0, 0.02, -5);
-path1.receiveShadow = true;
-scene.add(path1);
-
-const path2 = new THREE.Mesh(new THREE.PlaneGeometry(40, 6), pathMat);
-path2.rotation.x = -Math.PI / 2;
-path2.position.set(10, 0.02, -30);
-path2.receiveShadow = true;
-scene.add(path2);
+// Main paths
+createPath(0, -10, 6, 50);
+createPath(15, -30, 40, 6);
+createPath(-10, -20, 6, 20);
+createPath(30, -10, 6, 30);
+createPath(0, 10, 30, 5);
 
 // ============================================================
-// WATER
+// WATER - River Lum
 // ============================================================
-const waterGeo = new THREE.PlaneGeometry(80, 80);
+function createWaterTexture() {
+  const size = 64;
+  const data = new Uint8Array(size * size * 4);
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const i = (y * size + x) * 4;
+      const wave = Math.sin(x * 0.4 + y * 0.3) * 0.1;
+      data[i] = 30 + wave * 20;
+      data[i+1] = 80 + wave * 30;
+      data[i+2] = 160 + wave * 20;
+      data[i+3] = 180;
+    }
+  }
+  const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 8);
+  tex.magFilter = THREE.NearestFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 const waterMat = new THREE.MeshPhongMaterial({
-  color: 0x2266aa, transparent: true, opacity: 0.6,
-  shininess: 100, specular: 0x88bbff
+  map: createWaterTexture(),
+  transparent: true, opacity: 0.75,
+  shininess: 80, specular: 0x4488cc,
+  side: THREE.DoubleSide
 });
-const water = new THREE.Mesh(waterGeo, waterMat);
-water.rotation.x = -Math.PI / 2;
-water.position.set(-55, -0.3, 20);
-scene.add(water);
 
-// River
-const riverGeo = new THREE.PlaneGeometry(12, 120);
-const river = new THREE.Mesh(riverGeo, waterMat);
+// River flowing north-south on west side
+const river = new THREE.Mesh(new THREE.PlaneGeometry(16, 200), waterMat);
 river.rotation.x = -Math.PI / 2;
-river.position.set(-20, -0.2, 0);
+river.position.set(-25, -0.15, 0);
 scene.add(river);
 
+// River bank edges
+function createRiverBank(x, z, w, d) {
+  const bank = new THREE.Mesh(
+    new THREE.PlaneGeometry(w, d),
+    new THREE.MeshLambertMaterial({ color: 0x6B5430 })
+  );
+  bank.rotation.x = -Math.PI / 2;
+  bank.position.set(x, 0.01, z);
+  bank.receiveShadow = true;
+  scene.add(bank);
+}
+createRiverBank(-18, 0, 3, 200);
+createRiverBank(-32, 0, 3, 200);
+
 // ============================================================
-// TREES
+// TREES — OSRS-style low-poly
 // ============================================================
 const trees = [];
 const treePositions = [
-  [12, 8], [18, 12], [25, 5], [15, -15], [22, -10],
-  [30, 15], [10, 20], [28, -20], [35, 0], [8, -25],
-  [20, 25], [32, 22], [-8, 15], [-5, -20], [40, -15],
-  [14, 30], [26, 30], [38, 28],
+  // East forest
+  [15, 10], [20, 14], [27, 7], [18, -12], [24, -8],
+  [32, 17], [12, 22], [30, -18], [38, 2], [10, -22],
+  [22, 27], [35, 24], [42, 10], [40, -10], [15, 32],
+  // Near river
+  [-14, 15], [-12, -8], [-15, 25],
+  // South
+  [8, -35], [20, -40], [30, -38],
+  // North
+  [25, 40], [35, 35], [18, 45],
 ];
 
-function createTree(x, z) {
-  const group = new THREE.Group();
-  const h = 3 + Math.random() * 2;
+// Oak tree positions
+const oakPositions = [
+  [35, 5], [38, -5], [42, 15], [10, 35], [28, 35],
+];
 
-  // Trunk
-  const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.3, 0.4, h, 8),
-    new THREE.MeshLambertMaterial({ color: 0x6B4226 })
-  );
+function createTree(x, z, isOak = false) {
+  const group = new THREE.Group();
+  const scale = isOak ? 1.3 + Math.random() * 0.3 : 0.9 + Math.random() * 0.4;
+  const h = (isOak ? 5 : 3.5) * scale;
+
+  // Trunk — OSRS style: slightly tapered cylinder
+  const trunkGeo = new THREE.CylinderGeometry(0.25 * scale, 0.4 * scale, h, 6);
+  const trunkMat = new THREE.MeshLambertMaterial({
+    color: isOak ? 0x5C3A1E : 0x6B4226
+  });
+  const trunk = new THREE.Mesh(trunkGeo, trunkMat);
   trunk.position.y = h / 2;
   trunk.castShadow = true;
   group.add(trunk);
 
-  // Canopy layers
-  const leafColors = [0x228B22, 0x2E8B2E, 0x1E7A1E];
+  // Bark detail rings
   for (let i = 0; i < 3; i++) {
-    const leafSize = 2.2 - i * 0.4;
-    const leaf = new THREE.Mesh(
-      new THREE.SphereGeometry(leafSize, 8, 6),
-      new THREE.MeshLambertMaterial({ color: leafColors[i % 3] })
+    const ring = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.42 * scale, 0.42 * scale, 0.1, 6),
+      new THREE.MeshLambertMaterial({ color: isOak ? 0x4A2E16 : 0x5C3A1E })
     );
-    leaf.position.y = h + 0.8 + i * 0.8;
-    leaf.position.x = (Math.random() - 0.5) * 0.6;
-    leaf.position.z = (Math.random() - 0.5) * 0.6;
-    leaf.castShadow = true;
-    group.add(leaf);
+    ring.position.y = h * 0.3 + i * h * 0.2;
+    group.add(ring);
+  }
+
+  if (isOak) {
+    // Oak: wider, rounder canopy with multiple clusters
+    const leafColors = [0x2D6B1A, 0x357A20, 0x2A5E16];
+    const positions = [
+      [0, h + 1.5, 0, 2.8],
+      [-1.2, h + 0.5, 0.8, 2.0],
+      [1.0, h + 0.8, -0.6, 2.2],
+      [0.5, h + 2.2, 0.5, 1.8],
+      [-0.6, h + 2.0, -0.8, 1.6],
+    ];
+    positions.forEach(([lx, ly, lz, lr], i) => {
+      const leaf = new THREE.Mesh(
+        new THREE.DodecahedronGeometry(lr * scale, 1),
+        new THREE.MeshLambertMaterial({ color: leafColors[i % 3] })
+      );
+      leaf.position.set(lx * scale, ly, lz * scale);
+      leaf.castShadow = true;
+      group.add(leaf);
+    });
+  } else {
+    // Normal tree: triangular/conical shape like OSRS
+    const leafColors = [0x1A6B0A, 0x228B12, 0x1E7A0E];
+    // Bottom wide layer
+    const leaf1 = new THREE.Mesh(
+      new THREE.ConeGeometry(2.2 * scale, 2.0 * scale, 7),
+      new THREE.MeshLambertMaterial({ color: leafColors[0] })
+    );
+    leaf1.position.y = h + 0.5;
+    leaf1.castShadow = true;
+    group.add(leaf1);
+
+    // Middle layer
+    const leaf2 = new THREE.Mesh(
+      new THREE.ConeGeometry(1.7 * scale, 1.8 * scale, 7),
+      new THREE.MeshLambertMaterial({ color: leafColors[1] })
+    );
+    leaf2.position.y = h + 1.8;
+    leaf2.castShadow = true;
+    group.add(leaf2);
+
+    // Top
+    const leaf3 = new THREE.Mesh(
+      new THREE.ConeGeometry(1.0 * scale, 1.4 * scale, 6),
+      new THREE.MeshLambertMaterial({ color: leafColors[2] })
+    );
+    leaf3.position.y = h + 3.0;
+    leaf3.castShadow = true;
+    group.add(leaf3);
   }
 
   group.position.set(x, 0, z);
-  group.userData = { type: 'tree', name: 'Tree', health: 100, origX: x, origZ: z };
+  group.userData = {
+    type: 'tree',
+    name: isOak ? 'Oak Tree' : 'Tree',
+    isOak,
+    health: 100,
+    active: true,
+  };
   scene.add(group);
   trees.push(group);
   return group;
 }
 
-treePositions.forEach(([x, z]) => createTree(x, z));
+treePositions.forEach(([x, z]) => createTree(x, z, false));
+oakPositions.forEach(([x, z]) => createTree(x, z, true));
 
 // ============================================================
-// BUILDINGS — Lumbridge Castle
+// MINING ROCKS
 // ============================================================
-function createBuilding(x, z, w, d, h, roofColor = 0x8B4513, wallColor = 0xD2B48C) {
+const miningRocks = [];
+
+function createMiningRock(x, z, oreType) {
+  const group = new THREE.Group();
+  const colors = {
+    copper: { base: 0x6B5A3E, vein: 0xCD7F32, highlight: 0xE8A84C },
+    tin: { base: 0x707070, vein: 0xA8A8A8, highlight: 0xC8C8C8 },
+  };
+  const c = colors[oreType];
+
+  // Rock base
+  const baseGeo = new THREE.DodecahedronGeometry(1.2, 0);
+  const baseMat = new THREE.MeshLambertMaterial({ color: c.base });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.position.y = 0.8;
+  base.scale.set(1, 0.7, 1);
+  base.castShadow = true;
+  group.add(base);
+
+  // Ore veins (smaller colored chunks)
+  for (let i = 0; i < 4; i++) {
+    const vein = new THREE.Mesh(
+      new THREE.DodecahedronGeometry(0.25 + Math.random() * 0.2, 0),
+      new THREE.MeshLambertMaterial({ color: c.vein })
+    );
+    const angle = (i / 4) * Math.PI * 2 + Math.random() * 0.5;
+    vein.position.set(
+      Math.cos(angle) * 0.6,
+      0.5 + Math.random() * 0.6,
+      Math.sin(angle) * 0.6
+    );
+    vein.castShadow = true;
+    group.add(vein);
+  }
+
+  // Sparkling highlight
+  const highlight = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.15, 0),
+    new THREE.MeshBasicMaterial({ color: c.highlight })
+  );
+  highlight.position.set(0.3, 1.2, 0.3);
+  group.add(highlight);
+  group.userData._sparkle = highlight;
+
+  group.position.set(x, 0, z);
+  group.userData.type = 'rock';
+  group.userData.oreType = oreType;
+  group.userData.name = oreType === 'copper' ? 'Copper rock' : 'Tin rock';
+  group.userData.active = true;
+  group.userData.health = 100;
+  scene.add(group);
+  miningRocks.push(group);
+  return group;
+}
+
+// Mining site south of castle
+createMiningRock(5, -50, 'copper');
+createMiningRock(8, -52, 'copper');
+createMiningRock(12, -50, 'tin');
+createMiningRock(10, -54, 'tin');
+createMiningRock(3, -54, 'copper');
+createMiningRock(15, -53, 'tin');
+
+// ============================================================
+// FISHING SPOT
+// ============================================================
+const fishingSpots = [];
+
+function createFishingSpot(x, z) {
   const group = new THREE.Group();
 
-  // Walls
-  const walls = new THREE.Mesh(
-    new THREE.BoxGeometry(w, h, d),
-    new THREE.MeshLambertMaterial({ color: wallColor })
-  );
+  // Bubbles/ripples indicator
+  for (let i = 0; i < 5; i++) {
+    const bubble = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0xAADDFF, transparent: true, opacity: 0.7 })
+    );
+    bubble.position.set(
+      (Math.random() - 0.5) * 1.5,
+      0.1 + Math.random() * 0.3,
+      (Math.random() - 0.5) * 1.5
+    );
+    group.add(bubble);
+  }
+
+  // Fishing spot icon (floating)
+  const iconCanvas = document.createElement('canvas');
+  iconCanvas.width = 64; iconCanvas.height = 64;
+  const ictx = iconCanvas.getContext('2d');
+  ictx.fillStyle = '#00ccff';
+  ictx.font = 'bold 40px sans-serif';
+  ictx.textAlign = 'center';
+  ictx.fillText('🐟', 32, 45);
+  const iconTex = new THREE.CanvasTexture(iconCanvas);
+  const icon = new THREE.Sprite(new THREE.SpriteMaterial({ map: iconTex, depthTest: false }));
+  icon.position.y = 2;
+  icon.scale.set(1.5, 1.5, 1);
+  group.add(icon);
+
+  group.position.set(x, 0, z);
+  group.userData.type = 'fishingspot';
+  group.userData.name = 'Fishing spot';
+  group.userData.active = true;
+  scene.add(group);
+  fishingSpots.push(group);
+  return group;
+}
+
+createFishingSpot(-20, 5);
+createFishingSpot(-20, 15);
+
+// ============================================================
+// BUILDINGS — Lumbridge
+// ============================================================
+function createBuilding(x, z, w, d, h, options = {}) {
+  const group = new THREE.Group();
+  const wallColor = options.wallColor || 0xC8B898;
+  const roofColor = options.roofColor || 0x8B4513;
+  const hasChimney = options.chimney || false;
+
+  // Stone/plaster walls
+  const wallMat = new THREE.MeshLambertMaterial({ color: wallColor });
+
+  // Main walls
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), wallMat);
   walls.position.y = h / 2;
   walls.castShadow = true;
   walls.receiveShadow = true;
   group.add(walls);
 
+  // Window frames
+  if (w > 4) {
+    const winMat = new THREE.MeshLambertMaterial({ color: 0x4488aa });
+    const winFrameMat = new THREE.MeshLambertMaterial({ color: 0x5C3A1E });
+    for (let side = -1; side <= 1; side += 2) {
+      for (let i = -1; i <= 1; i += 2) {
+        const win = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1), winMat);
+        win.position.set(i * w * 0.25, h * 0.6, side * d / 2 + side * 0.02);
+        group.add(win);
+        const frame = new THREE.Mesh(new THREE.PlaneGeometry(1, 1.2), winFrameMat);
+        frame.position.set(i * w * 0.25, h * 0.6, side * d / 2 + side * 0.01);
+        group.add(frame);
+      }
+    }
+  }
+
   // Roof
-  const roofH = h * 0.5;
-  const roof = new THREE.Mesh(
-    new THREE.ConeGeometry(Math.max(w, d) * 0.75, roofH, 4),
-    new THREE.MeshLambertMaterial({ color: roofColor })
-  );
+  const roofH = h * 0.45;
+  const roofGeo = new THREE.ConeGeometry(Math.max(w, d) * 0.72, roofH, 4);
+  const roofMat = new THREE.MeshLambertMaterial({ color: roofColor });
+  const roof = new THREE.Mesh(roofGeo, roofMat);
   roof.position.y = h + roofH / 2;
   roof.rotation.y = Math.PI / 4;
   roof.castShadow = true;
@@ -594,220 +1466,923 @@ function createBuilding(x, z, w, d, h, roofColor = 0x8B4513, wallColor = 0xD2B48
 
   // Door
   const door = new THREE.Mesh(
-    new THREE.PlaneGeometry(1.2, 2),
-    new THREE.MeshLambertMaterial({ color: 0x4a3020, side: THREE.DoubleSide })
+    new THREE.PlaneGeometry(1.4, 2.4),
+    new THREE.MeshLambertMaterial({ color: 0x3A2010, side: THREE.DoubleSide })
   );
-  door.position.set(0, 1, d / 2 + 0.01);
+  door.position.set(0, 1.2, d / 2 + 0.02);
   group.add(door);
 
+  // Door handle
+  const handle = new THREE.Mesh(
+    new THREE.SphereGeometry(0.06, 6, 6),
+    new THREE.MeshLambertMaterial({ color: 0xCCBB33 })
+  );
+  handle.position.set(0.4, 1.2, d / 2 + 0.05);
+  group.add(handle);
+
+  // Chimney
+  if (hasChimney) {
+    const chimney = new THREE.Mesh(
+      new THREE.BoxGeometry(1, 3, 1),
+      new THREE.MeshLambertMaterial({ color: 0x666666 })
+    );
+    chimney.position.set(w * 0.3, h + roofH * 0.3, 0);
+    chimney.castShadow = true;
+    group.add(chimney);
+  }
+
   group.position.set(x, 0, z);
-  group.userData = { type: 'building', name: 'Building' };
+  group.userData = { type: 'building', name: options.name || 'Building' };
   scene.add(group);
   return group;
 }
 
-// Main castle
-const castle = createBuilding(0, -35, 14, 12, 10, 0x555555, 0xAAAAAA);
-castle.userData.name = 'Lumbridge Castle';
+// Lumbridge Castle — grey stone, tall
+const castle = createBuilding(0, -35, 16, 14, 11, {
+  wallColor: 0xA0A0A0, roofColor: 0x555555, name: 'Lumbridge Castle'
+});
 
-// Castle tower
-const tower1 = createBuilding(-8, -40, 5, 5, 14, 0x555555, 0x999999);
-tower1.userData.name = 'Castle Tower';
-const tower2 = createBuilding(8, -40, 5, 5, 14, 0x555555, 0x999999);
-tower2.userData.name = 'Castle Tower';
+// Castle towers
+const tower1 = createBuilding(-10, -42, 6, 6, 16, {
+  wallColor: 0x909090, roofColor: 0x555555, name: 'Castle Tower'
+});
+const tower2 = createBuilding(10, -42, 6, 6, 16, {
+  wallColor: 0x909090, roofColor: 0x555555, name: 'Castle Tower'
+});
 
-// General store
-const store = createBuilding(15, -30, 7, 6, 5, 0x8B4513, 0xDEB887);
-store.userData.name = 'General Store';
+// Castle battlements on towers
+function addBattlements(parent, w, h) {
+  const mat = new THREE.MeshLambertMaterial({ color: 0x808080 });
+  for (let i = 0; i < 4; i++) {
+    const angle = (i / 4) * Math.PI * 2;
+    const merlon = new THREE.Mesh(new THREE.BoxGeometry(1, 1.5, 0.6), mat);
+    merlon.position.set(
+      Math.cos(angle) * w * 0.4,
+      h + 0.75,
+      Math.sin(angle) * w * 0.4
+    );
+    merlon.rotation.y = angle;
+    merlon.castShadow = true;
+    parent.add(merlon);
+  }
+}
+addBattlements(tower1, 6, 16);
+addBattlements(tower2, 6, 16);
 
-// Small houses
-createBuilding(-8, 5, 5, 5, 4, 0x8B4513, 0xC4A882);
-createBuilding(25, -30, 5, 5, 4, 0xA0522D, 0xD2B48C);
+// General Store
+createBuilding(18, -28, 8, 7, 5, {
+  wallColor: 0xDEB887, roofColor: 0x8B4513, name: 'General Store'
+});
+
+// Bob's Axes
+createBuilding(25, -18, 7, 6, 5, {
+  wallColor: 0xC4A882, roofColor: 0xA0522D, name: "Bob's Axes", chimney: true
+});
+
+// Houses
+createBuilding(-10, 5, 6, 6, 4.5, {
+  wallColor: 0xC8B898, roofColor: 0x8B4513, name: 'House', chimney: true
+});
+createBuilding(-10, -10, 5, 5, 4, {
+  wallColor: 0xB8A888, roofColor: 0x7A3A10, name: 'House'
+});
+createBuilding(30, -32, 6, 5, 4.5, {
+  wallColor: 0xD2B48C, roofColor: 0xA0522D, name: 'House'
+});
 
 // Church
-const church = createBuilding(-8, -20, 6, 10, 7, 0x555555, 0xBBBBBB);
-church.userData.name = 'Lumbridge Church';
+const church = createBuilding(-10, -22, 7, 12, 8, {
+  wallColor: 0xBBBBBB, roofColor: 0x555555, name: 'Lumbridge Church'
+});
+// Church cross
+const cross1 = new THREE.Mesh(
+  new THREE.BoxGeometry(0.2, 2, 0.2),
+  new THREE.MeshLambertMaterial({ color: 0xCCCC33 })
+);
+cross1.position.set(-10, 13.5, -22);
+scene.add(cross1);
+const cross2 = new THREE.Mesh(
+  new THREE.BoxGeometry(1, 0.2, 0.2),
+  new THREE.MeshLambertMaterial({ color: 0xCCCC33 })
+);
+cross2.position.set(-10, 14, -22);
+scene.add(cross2);
+
+// Cooking range building
+const cookHouse = createBuilding(18, -10, 6, 6, 4, {
+  wallColor: 0xC8B090, roofColor: 0x8B4513, name: 'Cook House', chimney: true
+});
+
+// Cooking range object (invisible collider for cooking check)
+const cookingRange = new THREE.Object3D();
+cookingRange.position.set(18, 0, -10);
+scene.add(cookingRange);
+
+// Campfire
+const fireGroup = new THREE.Group();
+// Stone ring
+for (let i = 0; i < 8; i++) {
+  const stone = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.25, 0),
+    new THREE.MeshLambertMaterial({ color: 0x666666 })
+  );
+  const a = (i / 8) * Math.PI * 2;
+  stone.position.set(Math.cos(a) * 0.8, 0.15, Math.sin(a) * 0.8);
+  fireGroup.add(stone);
+}
+// Fire logs
+const fireLog1 = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.1, 0.1, 1.2, 5),
+  new THREE.MeshLambertMaterial({ color: 0x4A2E16 })
+);
+fireLog1.rotation.z = Math.PI / 2;
+fireLog1.position.y = 0.15;
+fireGroup.add(fireLog1);
+// Fire light
+const fireLight = new THREE.PointLight(0xff6600, 1.5, 8);
+fireLight.position.y = 1;
+fireGroup.add(fireLight);
+// Fire particles (simple geometry)
+const fireMat = new THREE.MeshBasicMaterial({ color: 0xff4400, transparent: true, opacity: 0.8 });
+for (let i = 0; i < 3; i++) {
+  const flame = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.6, 4), fireMat);
+  flame.position.set((Math.random() - 0.5) * 0.4, 0.5 + i * 0.2, (Math.random() - 0.5) * 0.4);
+  flame.userData._flame = true;
+  fireGroup.add(flame);
+}
+fireGroup.position.set(18, 0, -6);
+scene.add(fireGroup);
 
 // ============================================================
 // BRIDGE
 // ============================================================
-const bridgeGeo = new THREE.BoxGeometry(14, 0.5, 5);
-const bridgeMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
-const bridge = new THREE.Mesh(bridgeGeo, bridgeMat);
-bridge.position.set(-20, 0.3, -8);
-bridge.castShadow = true;
-bridge.receiveShadow = true;
-scene.add(bridge);
+const bridgeGroup = new THREE.Group();
+const bridgeBody = new THREE.Mesh(
+  new THREE.BoxGeometry(16, 0.6, 5),
+  new THREE.MeshLambertMaterial({ color: 0x7A5A35 })
+);
+bridgeBody.castShadow = true;
+bridgeBody.receiveShadow = true;
+bridgeGroup.add(bridgeBody);
 
-// Bridge rails
-for (const side of [-1, 1]) {
-  for (let i = -2; i <= 2; i++) {
-    const post = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.1, 0.1, 1.5, 6),
-      new THREE.MeshLambertMaterial({ color: 0x6B4226 })
-    );
-    post.position.set(-20 + i * 3, 1, -8 + side * 2.3);
-    scene.add(post);
-  }
+// Planks detail
+for (let i = -7; i <= 7; i++) {
+  const plank = new THREE.Mesh(
+    new THREE.BoxGeometry(0.9, 0.05, 4.8),
+    new THREE.MeshLambertMaterial({ color: i % 2 === 0 ? 0x8B6A40 : 0x7A5A30 })
+  );
+  plank.position.set(i, 0.32, 0);
+  bridgeGroup.add(plank);
 }
 
+// Rails
+for (const side of [-1, 1]) {
+  // Rail
+  const rail = new THREE.Mesh(
+    new THREE.BoxGeometry(15, 0.15, 0.15),
+    new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
+  );
+  rail.position.set(0, 1, side * 2.3);
+  bridgeGroup.add(rail);
+  // Posts
+  for (let i = -3; i <= 3; i++) {
+    const post = new THREE.Mesh(
+      new THREE.BoxGeometry(0.2, 1.5, 0.2),
+      new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
+    );
+    post.position.set(i * 2.2, 0.75, side * 2.3);
+    post.castShadow = true;
+    bridgeGroup.add(post);
+  }
+}
+bridgeGroup.position.set(-25, 0.35, -10);
+scene.add(bridgeGroup);
+
+// Second bridge further north
+const bridge2 = bridgeGroup.clone();
+bridge2.position.set(-25, 0.35, 20);
+scene.add(bridge2);
+
 // ============================================================
-// PLAYER
+// PLAYER - Better model
 // ============================================================
 const player = new THREE.Group();
-const skinColor = 0xFFDBB5;
-const shirtColor = 0x2255AA;
-const pantsColor = 0x553311;
+const skinColor = 0xE8C8A0;
+const shirtColor = 0x1144AA;
+const pantsColor = 0x443322;
+const bootColor = 0x3A2010;
 
-// Body
-const body = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1.4, 0.7),
+// Torso
+const torso = new THREE.Mesh(
+  new THREE.BoxGeometry(1.0, 1.3, 0.6),
   new THREE.MeshLambertMaterial({ color: shirtColor })
 );
-body.position.y = 2.2;
-body.castShadow = true;
-player.add(body);
+torso.position.y = 2.15;
+torso.castShadow = true;
+player.add(torso);
+
+// Belt
+const belt = new THREE.Mesh(
+  new THREE.BoxGeometry(1.05, 0.15, 0.65),
+  new THREE.MeshLambertMaterial({ color: 0x3A2010 })
+);
+belt.position.y = 1.55;
+player.add(belt);
 
 // Head
 const head = new THREE.Mesh(
-  new THREE.SphereGeometry(0.45, 10, 10),
+  new THREE.BoxGeometry(0.7, 0.75, 0.7),
   new THREE.MeshLambertMaterial({ color: skinColor })
 );
-head.position.y = 3.3;
+head.position.y = 3.2;
 head.castShadow = true;
 player.add(head);
+
+// Hair
+const hair = new THREE.Mesh(
+  new THREE.BoxGeometry(0.75, 0.3, 0.75),
+  new THREE.MeshLambertMaterial({ color: 0x4A2E16 })
+);
+hair.position.y = 3.65;
+player.add(hair);
 
 // Eyes
 for (const side of [-0.15, 0.15]) {
   const eye = new THREE.Mesh(
-    new THREE.SphereGeometry(0.06, 6, 6),
+    new THREE.BoxGeometry(0.08, 0.08, 0.05),
     new THREE.MeshBasicMaterial({ color: 0x000000 })
   );
-  eye.position.set(side, 3.35, 0.38);
+  eye.position.set(side, 3.25, 0.36);
   player.add(eye);
 }
 
 // Arms
-const armGeo = new THREE.CylinderGeometry(0.15, 0.15, 1.2, 6);
+const armGeo = new THREE.BoxGeometry(0.3, 1.1, 0.3);
 const armMat = new THREE.MeshLambertMaterial({ color: shirtColor });
+const skinArmMat = new THREE.MeshLambertMaterial({ color: skinColor });
+
+const leftArmPivot = new THREE.Group();
+leftArmPivot.position.set(-0.65, 2.7, 0);
 const leftArm = new THREE.Mesh(armGeo, armMat);
-leftArm.position.set(-0.7, 2.2, 0);
+leftArm.position.y = -0.55;
 leftArm.castShadow = true;
-player.add(leftArm);
+leftArmPivot.add(leftArm);
+// Left hand
+const leftHand = new THREE.Mesh(
+  new THREE.BoxGeometry(0.25, 0.25, 0.25),
+  skinArmMat
+);
+leftHand.position.y = -1.15;
+leftArmPivot.add(leftHand);
+player.add(leftArmPivot);
 
 const rightArmPivot = new THREE.Group();
-rightArmPivot.position.set(0.7, 2.8, 0);
+rightArmPivot.position.set(0.65, 2.7, 0);
 const rightArm = new THREE.Mesh(armGeo, armMat);
-rightArm.position.y = -0.6;
+rightArm.position.y = -0.55;
 rightArm.castShadow = true;
 rightArmPivot.add(rightArm);
+const rightHand = new THREE.Mesh(
+  new THREE.BoxGeometry(0.25, 0.25, 0.25),
+  skinArmMat
+);
+rightHand.position.y = -1.15;
+rightArmPivot.add(rightHand);
 player.add(rightArmPivot);
 
-// Axe (attached to right hand)
+// Axe on right hand
 const axeGroup = new THREE.Group();
 const axeHandle = new THREE.Mesh(
-  new THREE.CylinderGeometry(0.05, 0.05, 1.4, 6),
-  new THREE.MeshLambertMaterial({ color: 0x6B4226 })
+  new THREE.CylinderGeometry(0.04, 0.04, 1.3, 5),
+  new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
 );
 axeGroup.add(axeHandle);
-
 const axeHead = new THREE.Mesh(
   new THREE.BoxGeometry(0.5, 0.35, 0.08),
   new THREE.MeshLambertMaterial({ color: 0xCD7F32 })
 );
-axeHead.position.set(0.2, 0.55, 0);
+axeHead.position.set(0.22, 0.5, 0);
 axeGroup.add(axeHead);
-
+const axeEdge = new THREE.Mesh(
+  new THREE.BoxGeometry(0.08, 0.35, 0.08),
+  new THREE.MeshLambertMaterial({ color: 0xE8A84C })
+);
+axeEdge.position.set(0.48, 0.5, 0);
+axeGroup.add(axeEdge);
 axeGroup.position.set(0, -1.0, 0.3);
 axeGroup.rotation.z = 0.3;
 rightArmPivot.add(axeGroup);
 
 // Legs
-const legGeo = new THREE.CylinderGeometry(0.18, 0.18, 1.2, 6);
+const legGeo = new THREE.BoxGeometry(0.35, 1.0, 0.35);
 const legMat = new THREE.MeshLambertMaterial({ color: pantsColor });
-const leftLeg = new THREE.Mesh(legGeo, legMat);
-leftLeg.position.set(-0.25, 1.1, 0);
-leftLeg.castShadow = true;
-player.add(leftLeg);
+const bootMat = new THREE.MeshLambertMaterial({ color: bootColor });
 
+const leftLegPivot = new THREE.Group();
+leftLegPivot.position.set(-0.22, 1.5, 0);
+const leftLeg = new THREE.Mesh(legGeo, legMat);
+leftLeg.position.y = -0.5;
+leftLeg.castShadow = true;
+leftLegPivot.add(leftLeg);
+const leftBoot = new THREE.Mesh(
+  new THREE.BoxGeometry(0.35, 0.25, 0.45),
+  bootMat
+);
+leftBoot.position.set(0, -1.05, 0.05);
+leftLegPivot.add(leftBoot);
+player.add(leftLegPivot);
+
+const rightLegPivot = new THREE.Group();
+rightLegPivot.position.set(0.22, 1.5, 0);
 const rightLeg = new THREE.Mesh(legGeo, legMat);
-rightLeg.position.set(0.25, 1.1, 0);
+rightLeg.position.y = -0.5;
 rightLeg.castShadow = true;
-player.add(rightLeg);
+rightLegPivot.add(rightLeg);
+const rightBoot = new THREE.Mesh(
+  new THREE.BoxGeometry(0.35, 0.25, 0.45),
+  bootMat
+);
+rightBoot.position.set(0, -1.05, 0.05);
+rightLegPivot.add(rightBoot);
+player.add(rightLegPivot);
 
 player.position.set(0, 0, 0);
 scene.add(player);
+
+// Player overhead name
+const playerNameCanvas = document.createElement('canvas');
+playerNameCanvas.width = 256; playerNameCanvas.height = 48;
+const pnCtx = playerNameCanvas.getContext('2d');
+pnCtx.fillStyle = '#ffffff';
+pnCtx.font = 'bold 24px VT323, monospace';
+pnCtx.textAlign = 'center';
+pnCtx.strokeStyle = '#000';
+pnCtx.lineWidth = 3;
+pnCtx.strokeText('You', 128, 32);
+pnCtx.fillText('You', 128, 32);
+const playerNameTex = new THREE.CanvasTexture(playerNameCanvas);
+const playerNameSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: playerNameTex, depthTest: false }));
+playerNameSprite.position.y = 4.5;
+playerNameSprite.scale.set(2.5, 0.5, 1);
+player.add(playerNameSprite);
 
 // ============================================================
 // NPCs
 // ============================================================
 const npcs = [];
 
-function createNPC(x, z, name, shirtCol, pantsCol) {
+function createNPC(x, z, name, shirtCol, pantsCol, options = {}) {
   const npc = new THREE.Group();
 
+  // Body
   const nBody = new THREE.Mesh(
-    new THREE.BoxGeometry(0.9, 1.3, 0.6),
+    new THREE.BoxGeometry(0.85, 1.2, 0.55),
     new THREE.MeshLambertMaterial({ color: shirtCol })
   );
-  nBody.position.y = 2.1;
+  nBody.position.y = 2.05;
   nBody.castShadow = true;
   npc.add(nBody);
 
+  // Head
   const nHead = new THREE.Mesh(
-    new THREE.SphereGeometry(0.4, 10, 10),
-    new THREE.MeshLambertMaterial({ color: 0xFFDBB5 })
+    new THREE.BoxGeometry(0.6, 0.65, 0.6),
+    new THREE.MeshLambertMaterial({ color: options.skinColor || 0xE8C8A0 })
   );
-  nHead.position.y = 3.1;
+  nHead.position.y = 3.0;
   nHead.castShadow = true;
   npc.add(nHead);
 
+  // Hair
+  if (options.hairColor) {
+    const nHair = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.25, 0.65),
+      new THREE.MeshLambertMaterial({ color: options.hairColor })
+    );
+    nHair.position.y = 3.4;
+    npc.add(nHair);
+  }
+
+  // Hat
+  if (options.hatColor) {
+    const hat = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.45, 0.5, 0.5, 6),
+      new THREE.MeshLambertMaterial({ color: options.hatColor })
+    );
+    hat.position.y = 3.55;
+    npc.add(hat);
+  }
+
   // Arms
-  for (const s of [-0.6, 0.6]) {
+  for (const s of [-0.55, 0.55]) {
     const arm = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.13, 0.13, 1, 6),
+      new THREE.BoxGeometry(0.25, 1, 0.25),
       new THREE.MeshLambertMaterial({ color: shirtCol })
     );
-    arm.position.set(s, 2.1, 0);
+    arm.position.set(s, 2, 0);
     arm.castShadow = true;
     npc.add(arm);
   }
 
   // Legs
-  for (const s of [-0.2, 0.2]) {
+  for (const s of [-0.18, 0.18]) {
     const leg = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.15, 0.15, 1, 6),
+      new THREE.BoxGeometry(0.3, 0.9, 0.3),
       new THREE.MeshLambertMaterial({ color: pantsCol })
     );
-    leg.position.set(s, 1, 0);
+    leg.position.set(s, 1.0, 0);
     leg.castShadow = true;
     npc.add(leg);
   }
 
-  // Name tag
+  // Name tag - OSRS yellow
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 48;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#ffff00';
-  ctx.font = 'bold 28px sans-serif';
+  ctx.font = 'bold 24px VT323, monospace';
   ctx.textAlign = 'center';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.strokeText(name, 128, 32);
   ctx.fillText(name, 128, 32);
   const tex = new THREE.CanvasTexture(canvas);
   const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
-  tag.position.y = 4;
+  tag.position.y = 4.2;
   tag.scale.set(3, 0.6, 1);
   npc.add(tag);
 
   npc.position.set(x, 0, z);
-  npc.userData = { type: 'npc', name, wanderCenter: new THREE.Vector2(x, z), wanderTimer: Math.random() * 5 };
+  npc.userData = {
+    type: 'npc', name,
+    wanderCenter: new THREE.Vector2(x, z),
+    wanderTimer: Math.random() * 5,
+    wanderTarget: null
+  };
   scene.add(npc);
   npcs.push(npc);
   return npc;
 }
 
-createNPC(3, -28, 'Hans', 0xCC3333, 0x333333);
-createNPC(-3, -18, 'Cook', 0xFFFFFF, 0x333366);
-createNPC(8, -5, 'Guide', 0x33AA33, 0x554422);
+createNPC(3, -30, 'Hans', 0xCC3333, 0x333333, { hairColor: 0x6B4226 });
+createNPC(-5, -18, 'Cook', 0xFFFFFF, 0x333366, { hatColor: 0xFFFFFF });
+createNPC(8, -3, 'Guide', 0x33AA33, 0x554422, { hairColor: 0x4A4A4A });
+createNPC(25, -18, 'Bob', 0x2244AA, 0x443322, { hairColor: 0x333333 });
+createNPC(-10, -22, 'Father Aereck', 0x222222, 0x222222, { hairColor: 0x888888 });
+// Extra wandering NPCs
+createNPC(12, -15, 'Man', 0x886644, 0x443322, { hairColor: 0x4A2E16 });
+createNPC(-5, 8, 'Woman', 0x993366, 0x554433, { hairColor: 0x8B4513 });
+createNPC(20, -5, 'Duke Horacio', 0x8800AA, 0x333333, { hairColor: 0x666666 });
+
+// ============================================================
+// MONSTERS
+// ============================================================
+const monsters = [];
+
+function createMonster(x, z, type) {
+  const group = new THREE.Group();
+  const config = {
+    chicken: {
+      name: 'Chicken', maxHP: 3, level: 1,
+      xpAttack: 4, xpStr: 4, xpHP: 1.33,
+      loot: [
+        { name: 'Bones', chance: 1.0 },
+        { name: 'Feather', chance: 1.0, count: [1, 5] },
+        { name: 'Raw chicken', chance: 1.0 },
+      ],
+      build: (g) => {
+        // Body (white oval)
+        const body = new THREE.Mesh(
+          new THREE.SphereGeometry(0.5, 8, 6),
+          new THREE.MeshLambertMaterial({ color: 0xF5F5DC })
+        );
+        body.position.y = 0.7;
+        body.scale.set(1, 0.8, 1.2);
+        body.castShadow = true;
+        g.add(body);
+        // Head
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.22, 6, 6),
+          new THREE.MeshLambertMaterial({ color: 0xF5F5DC })
+        );
+        head.position.set(0, 1.1, 0.35);
+        g.add(head);
+        // Beak
+        const beak = new THREE.Mesh(
+          new THREE.ConeGeometry(0.08, 0.2, 4),
+          new THREE.MeshLambertMaterial({ color: 0xFFAA00 })
+        );
+        beak.position.set(0, 1.05, 0.58);
+        beak.rotation.x = -Math.PI / 2;
+        g.add(beak);
+        // Comb
+        const comb = new THREE.Mesh(
+          new THREE.BoxGeometry(0.05, 0.15, 0.15),
+          new THREE.MeshLambertMaterial({ color: 0xCC0000 })
+        );
+        comb.position.set(0, 1.3, 0.35);
+        g.add(comb);
+        // Wattle
+        const wattle = new THREE.Mesh(
+          new THREE.SphereGeometry(0.05, 4, 4),
+          new THREE.MeshLambertMaterial({ color: 0xCC0000 })
+        );
+        wattle.position.set(0, 0.98, 0.5);
+        g.add(wattle);
+        // Legs
+        for (const s of [-0.12, 0.12]) {
+          const leg = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.03, 0.03, 0.4, 4),
+            new THREE.MeshLambertMaterial({ color: 0xFFAA00 })
+          );
+          leg.position.set(s, 0.2, 0.1);
+          g.add(leg);
+        }
+        // Tail feathers
+        const tail = new THREE.Mesh(
+          new THREE.ConeGeometry(0.2, 0.4, 4),
+          new THREE.MeshLambertMaterial({ color: 0xE8E0D0 })
+        );
+        tail.position.set(0, 0.9, -0.55);
+        tail.rotation.x = Math.PI * 0.3;
+        g.add(tail);
+      }
+    },
+    rat: {
+      name: 'Giant rat', maxHP: 5, level: 1,
+      xpAttack: 5, xpStr: 5, xpHP: 1.67,
+      loot: [
+        { name: 'Bones', chance: 1.0 },
+        { name: 'Coins', chance: 0.5, count: [1, 5] },
+      ],
+      build: (g) => {
+        const body = new THREE.Mesh(
+          new THREE.SphereGeometry(0.4, 6, 5),
+          new THREE.MeshLambertMaterial({ color: 0x6B5A4A })
+        );
+        body.position.y = 0.5;
+        body.scale.set(1, 0.7, 1.5);
+        body.castShadow = true;
+        g.add(body);
+        // Head
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.2, 6, 5),
+          new THREE.MeshLambertMaterial({ color: 0x7B6A5A })
+        );
+        head.position.set(0, 0.55, 0.5);
+        g.add(head);
+        // Ears
+        for (const s of [-0.12, 0.12]) {
+          const ear = new THREE.Mesh(
+            new THREE.SphereGeometry(0.08, 4, 4),
+            new THREE.MeshLambertMaterial({ color: 0xBB9999 })
+          );
+          ear.position.set(s, 0.72, 0.45);
+          g.add(ear);
+        }
+        // Tail
+        const tailMat = new THREE.MeshLambertMaterial({ color: 0xBB9999 });
+        for (let i = 0; i < 5; i++) {
+          const seg = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04 - i * 0.005, 4, 4),
+            tailMat
+          );
+          seg.position.set(0, 0.35 + i * 0.03, -0.5 - i * 0.2);
+          g.add(seg);
+        }
+        // Eyes
+        for (const s of [-0.08, 0.08]) {
+          const eye = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04, 4, 4),
+            new THREE.MeshBasicMaterial({ color: 0xFF0000 })
+          );
+          eye.position.set(s, 0.6, 0.68);
+          g.add(eye);
+        }
+      }
+    },
+    goblin: {
+      name: 'Goblin', maxHP: 5, level: 2,
+      xpAttack: 8, xpStr: 8, xpHP: 2.67,
+      loot: [
+        { name: 'Bones', chance: 1.0 },
+        { name: 'Coins', chance: 0.7, count: [1, 12] },
+        { name: 'Goblin mail', chance: 0.1 },
+      ],
+      build: (g) => {
+        // Body (green)
+        const body = new THREE.Mesh(
+          new THREE.BoxGeometry(0.6, 0.9, 0.4),
+          new THREE.MeshLambertMaterial({ color: 0x664400 })
+        );
+        body.position.y = 1.3;
+        body.castShadow = true;
+        g.add(body);
+        // Head
+        const head = new THREE.Mesh(
+          new THREE.SphereGeometry(0.3, 7, 6),
+          new THREE.MeshLambertMaterial({ color: 0x5A8A30 })
+        );
+        head.position.y = 2.1;
+        head.castShadow = true;
+        g.add(head);
+        // Ears (pointy)
+        for (const s of [-1, 1]) {
+          const ear = new THREE.Mesh(
+            new THREE.ConeGeometry(0.08, 0.3, 4),
+            new THREE.MeshLambertMaterial({ color: 0x5A8A30 })
+          );
+          ear.position.set(s * 0.35, 2.2, 0);
+          ear.rotation.z = s * -0.6;
+          g.add(ear);
+        }
+        // Eyes
+        for (const s of [-0.1, 0.1]) {
+          const eye = new THREE.Mesh(
+            new THREE.SphereGeometry(0.06, 4, 4),
+            new THREE.MeshBasicMaterial({ color: 0xFF4400 })
+          );
+          eye.position.set(s, 2.15, 0.25);
+          g.add(eye);
+        }
+        // Nose
+        const nose = new THREE.Mesh(
+          new THREE.ConeGeometry(0.06, 0.15, 4),
+          new THREE.MeshLambertMaterial({ color: 0x4A7A20 })
+        );
+        nose.position.set(0, 2.05, 0.32);
+        nose.rotation.x = -Math.PI / 2;
+        g.add(nose);
+        // Arms (green skin)
+        for (const s of [-0.42, 0.42]) {
+          const arm = new THREE.Mesh(
+            new THREE.BoxGeometry(0.2, 0.8, 0.2),
+            new THREE.MeshLambertMaterial({ color: 0x5A8A30 })
+          );
+          arm.position.set(s, 1.3, 0);
+          g.add(arm);
+        }
+        // Legs
+        for (const s of [-0.15, 0.15]) {
+          const leg = new THREE.Mesh(
+            new THREE.BoxGeometry(0.22, 0.7, 0.22),
+            new THREE.MeshLambertMaterial({ color: 0x5A8A30 })
+          );
+          leg.position.set(s, 0.5, 0);
+          g.add(leg);
+        }
+        // Spear
+        const spear = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.03, 0.03, 2, 4),
+          new THREE.MeshLambertMaterial({ color: 0x6B4226 })
+        );
+        spear.position.set(0.5, 1.5, 0);
+        g.add(spear);
+        const spearTip = new THREE.Mesh(
+          new THREE.ConeGeometry(0.08, 0.25, 4),
+          new THREE.MeshLambertMaterial({ color: 0xAAAAAA })
+        );
+        spearTip.position.set(0.5, 2.6, 0);
+        g.add(spearTip);
+      }
+    },
+  };
+
+  const cfg = config[type];
+  if (!cfg) return null;
+  cfg.build(group);
+
+  // Name tag with level
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 48;
+  const ctx = canvas.getContext('2d');
+  const tagColor = cfg.level <= State.skills.attack.level ? '#00ff00' : cfg.level > State.skills.attack.level + 5 ? '#ff0000' : '#ffff00';
+  ctx.fillStyle = tagColor;
+  ctx.font = 'bold 22px VT323, monospace';
+  ctx.textAlign = 'center';
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 3;
+  ctx.strokeText(`${cfg.name} (lvl ${cfg.level})`, 128, 32);
+  ctx.fillText(`${cfg.name} (lvl ${cfg.level})`, 128, 32);
+  const tex = new THREE.CanvasTexture(canvas);
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+  tag.position.y = type === 'chicken' ? 2.2 : type === 'rat' ? 1.8 : 3.5;
+  tag.scale.set(3, 0.6, 1);
+  group.add(tag);
+
+  group.position.set(x, 0, z);
+  group.userData = {
+    type: 'monster',
+    monsterType: type,
+    name: cfg.name,
+    level: cfg.level,
+    maxHP: cfg.maxHP,
+    currentHP: cfg.maxHP,
+    loot: cfg.loot,
+    xpAttack: cfg.xpAttack,
+    xpStr: cfg.xpStr,
+    xpHP: cfg.xpHP,
+    wanderCenter: new THREE.Vector2(x, z),
+    wanderTimer: Math.random() * 5,
+    wanderTarget: null,
+    active: true,
+    inCombat: false,
+    combatTimer: 0,
+    respawnTimer: 0,
+  };
+  scene.add(group);
+  monsters.push(group);
+  return group;
+}
+
+// Chickens east of lumbridge
+createMonster(35, -5, 'chicken');
+createMonster(38, -2, 'chicken');
+createMonster(33, 2, 'chicken');
+createMonster(36, 4, 'chicken');
+createMonster(40, 0, 'chicken');
+
+// Rats in/near castle
+createMonster(5, -45, 'rat');
+createMonster(-3, -40, 'rat');
+createMonster(8, -42, 'rat');
+
+// Goblins across the river
+createMonster(-38, 5, 'goblin');
+createMonster(-42, 10, 'goblin');
+createMonster(-40, -2, 'goblin');
+createMonster(-35, 15, 'goblin');
+
+// ============================================================
+// LOOT PILES
+// ============================================================
+const lootPiles = [];
+
+function createLootPile(x, z, items) {
+  const pile = {
+    position: new THREE.Vector3(x, 0, z),
+    items: items,
+    timer: 60, // seconds until despawn
+    mesh: null,
+  };
+
+  // Red dot on ground
+  const dot = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.5, 0.5),
+    new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide })
+  );
+  dot.rotation.x = -Math.PI / 2;
+  dot.position.set(x, 0.08, z);
+  scene.add(dot);
+  pile.mesh = dot;
+
+  lootPiles.push(pile);
+}
+
+// ============================================================
+// DECORATIONS
+// ============================================================
+// Flowers with variety
+const flowerColors = [0xFF6699, 0xFFFF33, 0xFF3333, 0x9933FF, 0xFF8800, 0x00AAFF];
+for (let i = 0; i < 60; i++) {
+  const x = (Math.random() - 0.5) * 100;
+  const z = (Math.random() - 0.5) * 100;
+  // Don't place in river or buildings
+  if (Math.abs(x + 25) < 10) continue;
+  const flowerGroup = new THREE.Group();
+  const stem = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.02, 0.3, 4),
+    new THREE.MeshLambertMaterial({ color: 0x228B22 })
+  );
+  stem.position.y = 0.15;
+  flowerGroup.add(stem);
+  const petal = new THREE.Mesh(
+    new THREE.SphereGeometry(0.1, 5, 5),
+    new THREE.MeshLambertMaterial({ color: flowerColors[Math.floor(Math.random() * flowerColors.length)] })
+  );
+  petal.position.y = 0.32;
+  flowerGroup.add(petal);
+  flowerGroup.position.set(x, 0, z);
+  scene.add(flowerGroup);
+}
+
+// Scattered rocks
+for (let i = 0; i < 15; i++) {
+  const x = (Math.random() - 0.5) * 80;
+  const z = (Math.random() - 0.5) * 80;
+  if (Math.abs(x + 25) < 10) continue;
+  const rock = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.3 + Math.random() * 0.4, 0),
+    new THREE.MeshLambertMaterial({ color: 0x888888 + Math.floor(Math.random() * 0x222222) })
+  );
+  rock.position.set(x, 0.2, z);
+  rock.rotation.set(Math.random(), Math.random(), Math.random());
+  rock.castShadow = true;
+  scene.add(rock);
+}
+
+// Bushes
+for (let i = 0; i < 20; i++) {
+  const x = (Math.random() - 0.5) * 90;
+  const z = (Math.random() - 0.5) * 90;
+  if (Math.abs(x + 25) < 10) continue;
+  const bush = new THREE.Mesh(
+    new THREE.DodecahedronGeometry(0.5 + Math.random() * 0.4, 1),
+    new THREE.MeshLambertMaterial({ color: 0x1A5A0A + Math.floor(Math.random() * 0x0A2A0A) })
+  );
+  bush.position.set(x, 0.4, z);
+  bush.castShadow = true;
+  scene.add(bush);
+}
+
+// Fence near castle
+for (let i = -6; i <= 6; i++) {
+  const post = new THREE.Mesh(
+    new THREE.BoxGeometry(0.15, 1.3, 0.15),
+    new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
+  );
+  post.position.set(-14, 0.65, -32 + i * 2);
+  post.castShadow = true;
+  scene.add(post);
+  if (i < 6) {
+    const rail = new THREE.Mesh(
+      new THREE.BoxGeometry(2, 0.1, 0.08),
+      new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
+    );
+    rail.position.set(-14, 0.9, -31 + i * 2);
+    scene.add(rail);
+    const rail2 = rail.clone();
+    rail2.position.y = 0.4;
+    scene.add(rail2);
+  }
+}
+
+// Chicken coop fence
+for (let i = 0; i < 20; i++) {
+  const angle = (i / 20) * Math.PI * 2;
+  const x = 36.5 + Math.cos(angle) * 8;
+  const z = 0 + Math.sin(angle) * 8;
+  const post = new THREE.Mesh(
+    new THREE.BoxGeometry(0.12, 0.9, 0.12),
+    new THREE.MeshLambertMaterial({ color: 0x6B4226 })
+  );
+  post.position.set(x, 0.45, z);
+  scene.add(post);
+}
+
+// Well
+const wellGroup = new THREE.Group();
+const wellBase = new THREE.Mesh(
+  new THREE.CylinderGeometry(1.2, 1.3, 1, 8),
+  new THREE.MeshLambertMaterial({ color: 0x888888 })
+);
+wellBase.position.y = 0.5;
+wellBase.castShadow = true;
+wellGroup.add(wellBase);
+const wellWater = new THREE.Mesh(
+  new THREE.CylinderGeometry(1, 1, 0.1, 8),
+  new THREE.MeshBasicMaterial({ color: 0x2244AA })
+);
+wellWater.position.y = 0.6;
+wellGroup.add(wellWater);
+// Roof posts
+for (const s of [-1, 1]) {
+  const p = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 2.5, 5),
+    new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
+  );
+  p.position.set(s * 0.9, 1.8, 0);
+  wellGroup.add(p);
+}
+const wellRoof = new THREE.Mesh(
+  new THREE.ConeGeometry(1.5, 0.8, 4),
+  new THREE.MeshLambertMaterial({ color: 0x8B4513 })
+);
+wellRoof.position.y = 3.3;
+wellRoof.rotation.y = Math.PI / 4;
+wellGroup.add(wellRoof);
+wellGroup.position.set(5, 0, -15);
+scene.add(wellGroup);
+
+// Signpost
+function createSignpost(x, z, text) {
+  const g = new THREE.Group();
+  const pole = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, 2.5, 5),
+    new THREE.MeshLambertMaterial({ color: 0x5C3A1E })
+  );
+  pole.position.y = 1.25;
+  g.add(pole);
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(1.5, 0.5, 0.08),
+    new THREE.MeshLambertMaterial({ color: 0x8B6A40 })
+  );
+  sign.position.y = 2.3;
+  g.add(sign);
+  g.position.set(x, 0, z);
+  scene.add(g);
+}
+createSignpost(3, -8, 'Lumbridge');
+createSignpost(-16, -10, 'Bridge');
 
 // ============================================================
 // CLICK-TO-MOVE / RAYCASTING
@@ -815,17 +2390,18 @@ createNPC(8, -5, 'Guide', 0x33AA33, 0x554422);
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let moveTarget = null;
-let playerSpeed = 6;
+let playerSpeed = 7;
+let pendingInteraction = null;
+
 const clickMarker = new THREE.Mesh(
-  new THREE.RingGeometry(0.2, 0.5, 16),
+  new THREE.RingGeometry(0.15, 0.4, 16),
   new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide })
 );
 clickMarker.rotation.x = -Math.PI / 2;
-clickMarker.position.y = 0.05;
+clickMarker.position.y = 0.06;
 clickMarker.visible = false;
 scene.add(clickMarker);
 
-// Gather all clickable meshes
 function getAllMeshes(obj, arr = []) {
   if (obj.isMesh) arr.push(obj);
   for (const c of obj.children) getAllMeshes(c, arr);
@@ -834,8 +2410,11 @@ function getAllMeshes(obj, arr = []) {
 
 function getClickableObjects() {
   const meshes = [ground];
-  for (const t of trees) getAllMeshes(t, meshes);
+  for (const t of trees) if (t.visible) getAllMeshes(t, meshes);
   for (const n of npcs) getAllMeshes(n, meshes);
+  for (const m of monsters) if (m.visible && m.userData.active) getAllMeshes(m, meshes);
+  for (const r of miningRocks) if (r.visible && r.userData.active) getAllMeshes(r, meshes);
+  for (const f of fishingSpots) getAllMeshes(f, meshes);
   return meshes;
 }
 
@@ -863,27 +2442,46 @@ renderer.domElement.addEventListener('click', e => {
   const hit = hits[0];
   const group = findParentGroup(hit.object);
 
-  if (group && group.userData.type === 'npc') {
-    // Walk to NPC then open dialog
+  // Stop current actions
+  cancelActions();
+
+  if (group && group.userData.type === 'monster' && group.userData.active) {
+    moveTarget = new THREE.Vector3(group.position.x, 0, group.position.z);
+    pendingInteraction = { type: 'attack', target: group };
+  } else if (group && group.userData.type === 'npc') {
     moveTarget = new THREE.Vector3(group.position.x, 0, group.position.z);
     pendingInteraction = { type: 'talk', name: group.userData.name };
-  } else if (group && group.userData.type === 'tree') {
-    // Walk to tree then chop
+  } else if (group && group.userData.type === 'tree' && group.userData.active) {
     moveTarget = new THREE.Vector3(group.position.x, 0, group.position.z);
     pendingInteraction = { type: 'chop', tree: group };
+  } else if (group && group.userData.type === 'rock' && group.userData.active) {
+    moveTarget = new THREE.Vector3(group.position.x, 0, group.position.z);
+    pendingInteraction = { type: 'mine', rock: group };
+  } else if (group && group.userData.type === 'fishingspot') {
+    moveTarget = new THREE.Vector3(group.position.x + 3, 0, group.position.z);
+    pendingInteraction = { type: 'fish', spot: group };
   } else {
-    // Walk to ground point
     moveTarget = new THREE.Vector3(hit.point.x, 0, hit.point.z);
     pendingInteraction = null;
   }
 
-  clickMarker.position.set(moveTarget.x, 0.05, moveTarget.z);
-  clickMarker.visible = true;
-  State.isChopping = false;
-  State.chopTarget = null;
-});
+  // Loot pile pickup
+  for (let i = lootPiles.length - 1; i >= 0; i--) {
+    const pile = lootPiles[i];
+    if (player.position.distanceTo(pile.position) < 3 && hit.point.distanceTo(pile.position) < 2) {
+      for (const item of pile.items) {
+        addItem(item.name, item.count || 1);
+        chatMsg(`You pick up: ${item.count > 1 ? item.count + ' x ' : ''}${item.name}`, 'drop');
+      }
+      if (pile.mesh) scene.remove(pile.mesh);
+      lootPiles.splice(i, 1);
+      return;
+    }
+  }
 
-let pendingInteraction = null;
+  clickMarker.position.set(moveTarget.x, 0.06, moveTarget.z);
+  clickMarker.visible = true;
+});
 
 // Right-click
 renderer.domElement.addEventListener('contextmenu', e => {
@@ -902,16 +2500,34 @@ renderer.domElement.addEventListener('contextmenu', e => {
   }
 
   const group = findParentGroup(hits[0].object);
-  if (group && group.userData.type === 'npc') {
+  if (group && group.userData.type === 'monster' && group.userData.active) {
+    showContextMenu(e.clientX, e.clientY, group.userData.name, [
+      { label: 'Attack', action: 'attack', target: `Lvl-${group.userData.level}` },
+      { label: 'Examine', action: 'examine', target: group.userData.name },
+      { label: 'Cancel', action: 'cancel' }
+    ]);
+  } else if (group && group.userData.type === 'npc') {
     showContextMenu(e.clientX, e.clientY, group.userData.name, [
       { label: 'Talk-to', action: 'talk-to', target: group.userData.name },
       { label: 'Examine', action: 'examine', target: group.userData.name },
       { label: 'Cancel', action: 'cancel' }
     ]);
   } else if (group && group.userData.type === 'tree') {
-    showContextMenu(e.clientX, e.clientY, 'Tree', [
-      { label: 'Chop down', action: 'chop-down', target: 'Tree' },
-      { label: 'Examine', action: 'examine', target: 'Tree' },
+    showContextMenu(e.clientX, e.clientY, group.userData.name, [
+      { label: 'Chop down', action: 'chop-down', target: group.userData.name },
+      { label: 'Examine', action: 'examine', target: group.userData.name },
+      { label: 'Cancel', action: 'cancel' }
+    ]);
+  } else if (group && group.userData.type === 'rock') {
+    showContextMenu(e.clientX, e.clientY, group.userData.name, [
+      { label: 'Mine', action: 'mine', target: group.userData.name },
+      { label: 'Examine', action: 'examine', target: group.userData.name },
+      { label: 'Cancel', action: 'cancel' }
+    ]);
+  } else if (group && group.userData.type === 'fishingspot') {
+    showContextMenu(e.clientX, e.clientY, 'Fishing spot', [
+      { label: 'Net', action: 'net-fish', target: 'Fishing spot' },
+      { label: 'Examine', action: 'examine', target: 'Fishing spot' },
       { label: 'Cancel', action: 'cancel' }
     ]);
   } else if (group && group.userData.type === 'building') {
@@ -927,29 +2543,44 @@ renderer.domElement.addEventListener('contextmenu', e => {
   }
 });
 
+function cancelActions() {
+  State.isChopping = false;
+  State.chopTarget = null;
+  State.chopTimer = 0;
+  State.isMining = false;
+  State.mineTarget = null;
+  State.mineTimer = 0;
+  State.isFishing = false;
+  State.fishTimer = 0;
+  if (State.inCombat && State.combatTarget) {
+    State.combatTarget.userData.inCombat = false;
+  }
+  State.inCombat = false;
+  State.combatTarget = null;
+  State.combatTimer = 0;
+  rightArmPivot.rotation.x = 0;
+}
+
 // ============================================================
 // TREE CHOPPING
 // ============================================================
-function startChopping(name) {
-  // find nearest tree
-  let closest = null, dist = Infinity;
-  for (const t of trees) {
-    if (!t.visible) continue;
-    const d = player.position.distanceTo(t.position);
-    if (d < dist) { dist = d; closest = t; }
-  }
-  if (!closest || dist > 5) {
-    chatMsg("I need to get closer to the tree.", 'game');
+function startChopping(tree) {
+  if (!tree.visible || !tree.userData.active) {
+    chatMsg("This tree has already been chopped down.", 'game');
     return;
   }
   if (!State.equipment.weapon || State.equipment.weapon.type !== 'axe') {
-    chatMsg("I need an axe to chop this tree.", 'game');
+    chatMsg("You need an axe to chop this tree.", 'game');
     return;
   }
-  State.chopTarget = closest;
+  State.chopTarget = tree;
   State.isChopping = true;
   State.chopTimer = 0;
   chatMsg("You swing your axe at the tree.", 'system');
+  // Face the tree
+  const dx = tree.position.x - player.position.x;
+  const dz = tree.position.z - player.position.z;
+  player.rotation.y = Math.atan2(dx, dz);
 }
 
 function doChopTick(dt) {
@@ -959,32 +2590,261 @@ function doChopTick(dt) {
   // Animate arm swing
   rightArmPivot.rotation.x = Math.sin(State.chopTimer * 6) * 0.8;
 
-  if (State.chopTimer >= 2.5) {
-    // Success — tree falls
+  const chopTime = State.chopTarget.userData.isOak ? 4.0 : 2.5;
+  if (State.chopTimer >= chopTime) {
     const tree = State.chopTarget;
-    chatMsg("You get some logs.", 'system');
-    addXP('woodcutting', 25);
-    addItem('Logs', '🪵');
+    const logType = tree.userData.isOak ? 'Oak logs' : 'Logs';
+    chatMsg(`You get some ${logType.toLowerCase()}.`, 'skill');
+    addXP('woodcutting', tree.userData.isOak ? 37 : 25);
+    addItem(logType);
+    State.totalLogsChopped++;
+
+    // Bird's nest chance (~5%)
+    if (Math.random() < 0.05) {
+      addItem("Bird's nest");
+      chatMsg("A bird's nest falls out of the tree!", 'rare');
+      chatMsg("🪺 You find a bird's nest!", 'drop');
+    }
 
     // Falling animation
     const fallDir = Math.random() * Math.PI * 2;
     tree.userData.falling = true;
     tree.userData.fallAngle = 0;
     tree.userData.fallAxis = new THREE.Vector3(Math.cos(fallDir), 0, Math.sin(fallDir)).normalize();
-    tree.userData.fallSpeed = 2;
 
+    tree.userData.active = false;
     State.isChopping = false;
     State.chopTarget = null;
     State.chopTimer = 0;
     rightArmPivot.rotation.x = 0;
 
-    // Respawn tree after 15s
+    // Respawn after 12s
     setTimeout(() => {
       tree.userData.falling = false;
       tree.rotation.set(0, 0, 0);
       tree.position.y = 0;
       tree.visible = true;
-    }, 15000);
+      tree.userData.active = true;
+    }, 12000);
+  }
+}
+
+// ============================================================
+// MINING
+// ============================================================
+function startMining(rock) {
+  if (!rock.userData.active) {
+    chatMsg("There's no ore left in this rock.", 'game');
+    return;
+  }
+  State.mineTarget = rock;
+  State.isMining = true;
+  State.mineTimer = 0;
+  chatMsg("You swing your pickaxe at the rock.", 'system');
+  const dx = rock.position.x - player.position.x;
+  const dz = rock.position.z - player.position.z;
+  player.rotation.y = Math.atan2(dx, dz);
+}
+
+function doMineTick(dt) {
+  if (!State.isMining || !State.mineTarget) return;
+  State.mineTimer += dt;
+
+  rightArmPivot.rotation.x = Math.sin(State.mineTimer * 5) * 0.7;
+
+  if (State.mineTimer >= 3.0) {
+    const rock = State.mineTarget;
+    const ore = rock.userData.oreType === 'copper' ? 'Copper ore' : 'Tin ore';
+    chatMsg(`You manage to mine some ${ore.toLowerCase()}.`, 'skill');
+    addXP('mining', rock.userData.oreType === 'copper' ? 17 : 17);
+    addItem(ore);
+
+    // Deplete rock
+    rock.userData.active = false;
+    rock.children.forEach(c => {
+      if (c.material && c.material.color) {
+        c.material = c.material.clone();
+        c.material.color.setHex(0x555555);
+      }
+    });
+
+    State.isMining = false;
+    State.mineTarget = null;
+    State.mineTimer = 0;
+    rightArmPivot.rotation.x = 0;
+
+    // Respawn after 8s
+    setTimeout(() => {
+      rock.userData.active = true;
+      const colors = {
+        copper: { base: 0x6B5A3E, vein: 0xCD7F32 },
+        tin: { base: 0x707070, vein: 0xA8A8A8 },
+      };
+      const c = colors[rock.userData.oreType];
+      rock.children.forEach((child, i) => {
+        if (child.material && child.material.color) {
+          child.material = child.material.clone();
+          child.material.color.setHex(i === 0 ? c.base : c.vein);
+        }
+      });
+    }, 8000);
+  }
+}
+
+// ============================================================
+// FISHING
+// ============================================================
+function startFishing(spot) {
+  State.isFishing = true;
+  State.fishTimer = 0;
+  chatMsg("You cast out your net...", 'system');
+  const dx = spot.position.x - player.position.x;
+  const dz = spot.position.z - player.position.z;
+  player.rotation.y = Math.atan2(dx, dz);
+}
+
+function doFishTick(dt) {
+  if (!State.isFishing) return;
+  State.fishTimer += dt;
+
+  // Subtle animation
+  rightArmPivot.rotation.x = Math.sin(State.fishTimer * 2) * 0.2;
+
+  if (State.fishTimer >= 3.5) {
+    chatMsg("You catch some shrimps.", 'skill');
+    addXP('fishing', 10);
+    addItem('Raw shrimps');
+    State.fishTimer = 0; // Keep fishing
+  }
+}
+
+// ============================================================
+// COMBAT
+// ============================================================
+function startCombat(monster) {
+  if (!monster.userData.active) return;
+  State.combatTarget = monster;
+  State.inCombat = true;
+  State.combatTimer = 0;
+  monster.userData.inCombat = true;
+  chatMsg(`You attack the ${monster.userData.name}.`, 'combat');
+  const dx = monster.position.x - player.position.x;
+  const dz = monster.position.z - player.position.z;
+  player.rotation.y = Math.atan2(dx, dz);
+}
+
+function doCombatTick(dt) {
+  if (!State.inCombat || !State.combatTarget) return;
+  const mon = State.combatTarget;
+
+  if (!mon.userData.active || !mon.visible) {
+    cancelActions();
+    return;
+  }
+
+  // Face monster
+  const dx = mon.position.x - player.position.x;
+  const dz = mon.position.z - player.position.z;
+  const dist = Math.sqrt(dx * dx + dz * dz);
+  player.rotation.y = Math.atan2(dx, dz);
+
+  // Move into melee range
+  if (dist > 2.5) {
+    const step = Math.min(playerSpeed * dt, dist - 2);
+    player.position.x += (dx / dist) * step;
+    player.position.z += (dz / dist) * step;
+    return;
+  }
+
+  State.combatTimer += dt;
+
+  // Attack animation
+  rightArmPivot.rotation.x = Math.sin(State.combatTimer * 8) * 0.6;
+
+  // Player attacks every 2.4s (OSRS 4-tick)
+  if (State.combatTimer >= 2.4) {
+    State.combatTimer = 0;
+
+    // Player hits monster
+    const maxHit = Math.max(1, State.skills.strength.level + (State.equipment.weapon?.attackBonus || 0));
+    const accuracy = 0.5 + State.skills.attack.level * 0.03;
+    if (Math.random() < accuracy) {
+      const damage = Math.floor(Math.random() * maxHit) + 1;
+      mon.userData.currentHP -= damage;
+      showHitSplat(mon, damage);
+      chatMsg(`You hit the ${mon.userData.name} for ${damage} damage.`, 'combat');
+    } else {
+      showHitSplat(mon, 0);
+    }
+
+    // Monster attacks player
+    const monMaxHit = Math.max(1, mon.userData.level);
+    const monAccuracy = 0.3 + mon.userData.level * 0.05;
+    if (Math.random() < monAccuracy) {
+      const monDmg = Math.floor(Math.random() * monMaxHit) + 1;
+      State.currentHP -= monDmg;
+      showHitSplat(player, monDmg);
+      if (State.currentHP <= 0) {
+        State.currentHP = 0;
+        chatMsg("Oh dear, you are dead!", 'game');
+        // Respawn at lumbridge
+        setTimeout(() => {
+          player.position.set(0, 0, -25);
+          State.currentHP = State.maxHP;
+          cancelActions();
+          chatMsg("You respawn in Lumbridge.", 'system');
+        }, 2000);
+        cancelActions();
+        return;
+      }
+    } else {
+      showHitSplat(player, 0);
+    }
+
+    // Monster dies
+    if (mon.userData.currentHP <= 0) {
+      mon.userData.currentHP = 0;
+      mon.userData.active = false;
+      chatMsg(`You kill the ${mon.userData.name}!`, 'combat');
+
+      // XP
+      addXP('attack', mon.userData.xpAttack);
+      addXP('strength', mon.userData.xpStr);
+      addXP('hitpoints', Math.round(mon.userData.xpHP));
+
+      // Loot drops
+      const drops = [];
+      for (const lootDef of mon.userData.loot) {
+        if (Math.random() < lootDef.chance) {
+          const count = lootDef.count
+            ? Math.floor(Math.random() * (lootDef.count[1] - lootDef.count[0] + 1)) + lootDef.count[0]
+            : 1;
+          drops.push({ name: lootDef.name, count });
+        }
+      }
+      if (drops.length > 0) {
+        createLootPile(mon.position.x, mon.position.z, drops);
+        chatMsg(`Loot: ${drops.map(d => (d.count > 1 ? d.count + ' x ' : '') + d.name).join(', ')}`, 'drop');
+      }
+
+      // Death animation: sink into ground
+      mon.userData.deathAnim = 0;
+
+      // Respawn after 15s
+      const spawnX = mon.userData.wanderCenter.x;
+      const spawnZ = mon.userData.wanderCenter.y;
+      setTimeout(() => {
+        mon.position.set(spawnX, 0, spawnZ);
+        mon.userData.currentHP = mon.userData.maxHP;
+        mon.userData.active = true;
+        mon.userData.inCombat = false;
+        mon.userData.deathAnim = undefined;
+        mon.visible = true;
+        mon.scale.set(1, 1, 1);
+      }, 15000);
+
+      cancelActions();
+    }
   }
 }
 
@@ -997,17 +2857,23 @@ window.addEventListener('mouseup', e => { if (e.button === 1) isRotating = false
 window.addEventListener('mousemove', e => {
   if (isRotating) {
     cameraAngle -= e.movementX * 0.005;
-    cameraPitch = Math.max(0.2, Math.min(1.2, cameraPitch - e.movementY * 0.005));
+    cameraPitch = Math.max(0.15, Math.min(1.3, cameraPitch - e.movementY * 0.005));
   }
 });
 renderer.domElement.addEventListener('wheel', e => {
-  cameraDistance = Math.max(6, Math.min(40, cameraDistance + e.deltaY * 0.02));
+  cameraDistance = Math.max(5, Math.min(45, cameraDistance + e.deltaY * 0.02));
   e.preventDefault();
 }, { passive: false });
 
-// Arrow keys for camera too
 const keysDown = new Set();
-window.addEventListener('keydown', e => keysDown.add(e.key));
+window.addEventListener('keydown', e => {
+  keysDown.add(e.key);
+  if (e.key === 'Escape') {
+    cancelActions();
+    contextMenu.style.display = 'none';
+    npcDialog.style.display = 'none';
+  }
+});
 window.addEventListener('keyup', e => keysDown.delete(e.key));
 
 // ============================================================
@@ -1017,34 +2883,57 @@ const minimapCanvas = document.getElementById('minimap-canvas');
 const mCtx = minimapCanvas.getContext('2d');
 
 function drawMinimap() {
-  const w = 160, h = 160;
+  const w = 172, h = 172;
   mCtx.fillStyle = '#1a3a1a';
   mCtx.fillRect(0, 0, w, h);
 
-  const scale = 1.2;
+  const scale = 1.4;
   const cx = w / 2, cy = h / 2;
   const px = player.position.x, pz = player.position.z;
 
   // Water
-  mCtx.fillStyle = '#2255aa';
-  mCtx.fillRect(cx + (-20 - 6 - px) * scale, cy + (-60 - pz) * scale, 12 * scale, 120 * scale);
-  mCtx.fillRect(cx + (-55 - 40 - px) * scale, cy + (20 - 40 - pz) * scale, 80 * scale, 80 * scale);
+  mCtx.fillStyle = '#1a4488';
+  mCtx.fillRect(cx + (-25 - 8 - px) * scale, cy + (-100 - pz) * scale, 16 * scale, 200 * scale);
+
+  // Paths
+  mCtx.fillStyle = '#7a5a35';
+  mCtx.fillRect(cx + (0 - 3 - px) * scale, cy + (-35 - pz) * scale, 6 * scale, 50 * scale);
+  mCtx.fillRect(cx + (-5 - px) * scale, cy + (-33 - pz) * scale, 40 * scale, 6 * scale);
 
   // Buildings
   mCtx.fillStyle = '#888';
-  mCtx.fillRect(cx + (0 - 7 - px) * scale, cy + (-35 - 6 - pz) * scale, 14 * scale, 12 * scale);
+  mCtx.fillRect(cx + (0 - 8 - px) * scale, cy + (-35 - 7 - pz) * scale, 16 * scale, 14 * scale);
   mCtx.fillStyle = '#996633';
-  mCtx.fillRect(cx + (15 - 3.5 - px) * scale, cy + (-30 - 3 - pz) * scale, 7 * scale, 6 * scale);
+  mCtx.fillRect(cx + (18 - 4 - px) * scale, cy + (-28 - 3.5 - pz) * scale, 8 * scale, 7 * scale);
+  mCtx.fillStyle = '#aaa';
+  mCtx.fillRect(cx + (-10 - 3.5 - px) * scale, cy + (-22 - 6 - pz) * scale, 7 * scale, 12 * scale);
 
   // Trees
-  mCtx.fillStyle = '#116611';
+  mCtx.fillStyle = '#0a5a0a';
   for (const t of trees) {
-    if (!t.visible) continue;
+    if (!t.visible || !t.userData.active) continue;
     const tx = cx + (t.position.x - px) * scale;
     const ty = cy + (t.position.z - pz) * scale;
     mCtx.beginPath();
-    mCtx.arc(tx, ty, 2.5, 0, Math.PI * 2);
+    mCtx.arc(tx, ty, t.userData.isOak ? 3 : 2, 0, Math.PI * 2);
     mCtx.fill();
+  }
+
+  // Mining rocks
+  mCtx.fillStyle = '#8a6a3a';
+  for (const r of miningRocks) {
+    const rx = cx + (r.position.x - px) * scale;
+    const ry = cy + (r.position.z - pz) * scale;
+    mCtx.fillRect(rx - 2, ry - 2, 4, 4);
+  }
+
+  // Monsters
+  mCtx.fillStyle = '#ff4444';
+  for (const m of monsters) {
+    if (!m.visible || !m.userData.active) continue;
+    const mx = cx + (m.position.x - px) * scale;
+    const my = cy + (m.position.z - pz) * scale;
+    mCtx.fillRect(mx - 2, my - 2, 4, 4);
   }
 
   // NPCs
@@ -1057,10 +2946,28 @@ function drawMinimap() {
     mCtx.fill();
   }
 
-  // Player (center)
+  // Fishing spots
+  mCtx.fillStyle = '#00ccff';
+  for (const f of fishingSpots) {
+    const fx = cx + (f.position.x - px) * scale;
+    const fy = cy + (f.position.z - pz) * scale;
+    mCtx.beginPath();
+    mCtx.arc(fx, fy, 3, 0, Math.PI * 2);
+    mCtx.fill();
+  }
+
+  // Loot piles
+  mCtx.fillStyle = '#ff2222';
+  for (const l of lootPiles) {
+    const lx = cx + (l.position.x - px) * scale;
+    const ly = cy + (l.position.z - pz) * scale;
+    mCtx.fillRect(lx - 1, ly - 1, 3, 3);
+  }
+
+  // Player (center white)
   mCtx.fillStyle = '#ffffff';
   mCtx.beginPath();
-  mCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+  mCtx.arc(cx, cy, 4, 0, Math.PI * 2);
   mCtx.fill();
 
   // Player direction arrow
@@ -1068,8 +2975,15 @@ function drawMinimap() {
   mCtx.lineWidth = 2;
   mCtx.beginPath();
   mCtx.moveTo(cx, cy);
-  mCtx.lineTo(cx + Math.sin(player.rotation.y) * 8, cy + Math.cos(player.rotation.y) * -8);
+  mCtx.lineTo(cx + Math.sin(player.rotation.y) * 10, cy - Math.cos(player.rotation.y) * 10);
   mCtx.stroke();
+
+  // Circular mask
+  mCtx.globalCompositeOperation = 'destination-in';
+  mCtx.beginPath();
+  mCtx.arc(w/2, h/2, w/2 - 1, 0, Math.PI * 2);
+  mCtx.fill();
+  mCtx.globalCompositeOperation = 'source-over';
 }
 
 // ============================================================
@@ -1081,24 +2995,125 @@ function updateNPCs(dt) {
     if (npc.userData.wanderTimer <= 0) {
       const center = npc.userData.wanderCenter;
       const angle = Math.random() * Math.PI * 2;
-      const dist = Math.random() * 3;
+      const dist = Math.random() * 4;
       npc.userData.wanderTarget = new THREE.Vector2(
         center.x + Math.cos(angle) * dist,
         center.y + Math.sin(angle) * dist
       );
-      npc.userData.wanderTimer = 3 + Math.random() * 5;
+      npc.userData.wanderTimer = 4 + Math.random() * 6;
     }
     if (npc.userData.wanderTarget) {
       const target = npc.userData.wanderTarget;
       const dx = target.x - npc.position.x;
       const dz = target.y - npc.position.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
-      if (dist > 0.2) {
-        const speed = 1.2 * dt;
+      if (dist > 0.3) {
+        const speed = 1.5 * dt;
         npc.position.x += (dx / dist) * speed;
         npc.position.z += (dz / dist) * speed;
         npc.rotation.y = Math.atan2(dx, dz);
       }
+    }
+  }
+}
+
+function updateMonsters(dt) {
+  for (const mon of monsters) {
+    if (!mon.userData.active) {
+      // Death animation
+      if (mon.userData.deathAnim !== undefined) {
+        mon.userData.deathAnim += dt;
+        mon.scale.y = Math.max(0.01, 1 - mon.userData.deathAnim * 2);
+        if (mon.userData.deathAnim > 0.5) {
+          mon.visible = false;
+        }
+      }
+      continue;
+    }
+    if (mon.userData.inCombat) continue;
+
+    mon.userData.wanderTimer -= dt;
+    if (mon.userData.wanderTimer <= 0) {
+      const center = mon.userData.wanderCenter;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = Math.random() * 3;
+      mon.userData.wanderTarget = new THREE.Vector2(
+        center.x + Math.cos(angle) * dist,
+        center.y + Math.sin(angle) * dist
+      );
+      mon.userData.wanderTimer = 2 + Math.random() * 4;
+    }
+    if (mon.userData.wanderTarget) {
+      const target = mon.userData.wanderTarget;
+      const dx = target.x - mon.position.x;
+      const dz = target.y - mon.position.z;
+      const dist = Math.sqrt(dx * dx + dz * dz);
+      if (dist > 0.3) {
+        const speed = 1.0 * dt;
+        mon.position.x += (dx / dist) * speed;
+        mon.position.z += (dz / dist) * speed;
+        mon.rotation.y = Math.atan2(dx, dz);
+      }
+    }
+  }
+}
+
+// ============================================================
+// HEALTH BARS (3D sprites above monsters)
+// ============================================================
+function drawHealthBars() {
+  // Remove old bars
+  document.querySelectorAll('.health-bar-container').forEach(el => el.remove());
+
+  // Player HP
+  const playerHPPct = (State.currentHP / State.maxHP) * 100;
+
+  for (const mon of monsters) {
+    if (!mon.visible || !mon.userData.active) continue;
+    if (!mon.userData.inCombat && mon.userData.currentHP >= mon.userData.maxHP) continue;
+
+    const pos = toScreenPos(mon.position);
+    if (pos.x < 0 || pos.x > window.innerWidth || pos.y < 0 || pos.y > window.innerHeight) continue;
+
+    const hpPct = (mon.userData.currentHP / mon.userData.maxHP) * 100;
+    const container = document.createElement('div');
+    container.className = 'health-bar-container';
+    container.style.left = (pos.x - 16) + 'px';
+    container.style.top = (pos.y - 40) + 'px';
+    container.innerHTML = `<div class="health-bar-bg"><div class="health-bar-fill ${hpPct < 25 ? 'critical' : hpPct < 50 ? 'low' : ''}" style="width:${hpPct}%"></div></div>`;
+    document.body.appendChild(container);
+  }
+}
+
+// ============================================================
+// LOOT PILE UPDATE
+// ============================================================
+function updateLootPiles(dt) {
+  for (let i = lootPiles.length - 1; i >= 0; i--) {
+    const pile = lootPiles[i];
+    pile.timer -= dt;
+    if (pile.timer <= 0) {
+      if (pile.mesh) scene.remove(pile.mesh);
+      lootPiles.splice(i, 1);
+      continue;
+    }
+    // Pulse the dot
+    if (pile.mesh) {
+      pile.mesh.material.opacity = 0.5 + Math.sin(Date.now() * 0.005) * 0.5;
+      pile.mesh.material.transparent = true;
+    }
+  }
+
+  // Auto-pickup when walking near
+  for (let i = lootPiles.length - 1; i >= 0; i--) {
+    const pile = lootPiles[i];
+    if (player.position.distanceTo(pile.position) < 1.5) {
+      for (const item of pile.items) {
+        addItem(item.name, item.count || 1);
+        chatMsg(`You pick up: ${item.count > 1 ? item.count + ' x ' : ''}${item.name}`, 'drop');
+      }
+      if (pile.mesh) scene.remove(pile.mesh);
+      lootPiles.splice(i, 1);
     }
   }
 }
@@ -1108,24 +3123,25 @@ function updateNPCs(dt) {
 // ============================================================
 const clock = new THREE.Clock();
 let walkCycle = 0;
+let frameCount = 0;
 
 function animate() {
   requestAnimationFrame(animate);
   const dt = Math.min(clock.getDelta(), 0.05);
+  frameCount++;
 
-  // Camera keyboard rotation
-  if (keysDown.has('ArrowLeft')) cameraAngle += 2 * dt;
-  if (keysDown.has('ArrowRight')) cameraAngle -= 2 * dt;
-  if (keysDown.has('ArrowUp')) cameraPitch = Math.min(1.2, cameraPitch + dt);
-  if (keysDown.has('ArrowDown')) cameraPitch = Math.max(0.2, cameraPitch - dt);
+  // Camera keyboard
+  if (keysDown.has('ArrowLeft')) cameraAngle += 2.5 * dt;
+  if (keysDown.has('ArrowRight')) cameraAngle -= 2.5 * dt;
+  if (keysDown.has('ArrowUp')) cameraPitch = Math.min(1.3, cameraPitch + dt);
+  if (keysDown.has('ArrowDown')) cameraPitch = Math.max(0.15, cameraPitch - dt);
 
   // Player movement
   if (moveTarget) {
     const dx = moveTarget.x - player.position.x;
     const dz = moveTarget.z - player.position.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
-
-    const interactionDist = pendingInteraction ? 3.0 : 0.3;
+    const interactionDist = pendingInteraction ? 2.5 : 0.3;
 
     if (dist > interactionDist) {
       const step = Math.min(playerSpeed * dt, dist);
@@ -1133,48 +3149,45 @@ function animate() {
       player.position.z += (dz / dist) * step;
       player.rotation.y = Math.atan2(dx, dz);
 
-      // Walk animation
       walkCycle += dt * 8;
-      leftLeg.rotation.x = Math.sin(walkCycle) * 0.5;
-      rightLeg.rotation.x = -Math.sin(walkCycle) * 0.5;
-      leftArm.rotation.x = -Math.sin(walkCycle) * 0.3;
-      if (!State.isChopping) rightArmPivot.rotation.x = Math.sin(walkCycle) * 0.3;
+      leftLegPivot.rotation.x = Math.sin(walkCycle) * 0.5;
+      rightLegPivot.rotation.x = -Math.sin(walkCycle) * 0.5;
+      leftArmPivot.rotation.x = -Math.sin(walkCycle) * 0.3;
+      if (!State.isChopping && !State.isMining && !State.inCombat) {
+        rightArmPivot.rotation.x = Math.sin(walkCycle) * 0.3;
+      }
     } else {
-      // Arrived
       moveTarget = null;
       clickMarker.visible = false;
-      leftLeg.rotation.x = 0;
-      rightLeg.rotation.x = 0;
-      leftArm.rotation.x = 0;
-      if (!State.isChopping) rightArmPivot.rotation.x = 0;
+      leftLegPivot.rotation.x = 0;
+      rightLegPivot.rotation.x = 0;
+      leftArmPivot.rotation.x = 0;
+      if (!State.isChopping && !State.isMining && !State.inCombat) {
+        rightArmPivot.rotation.x = 0;
+      }
 
       if (pendingInteraction) {
-        if (pendingInteraction.type === 'talk') {
-          openNPCDialog(pendingInteraction.name);
-        } else if (pendingInteraction.type === 'chop') {
-          State.chopTarget = pendingInteraction.tree;
-          if (pendingInteraction.tree.visible && !pendingInteraction.tree.userData.falling) {
-            State.isChopping = true;
-            State.chopTimer = 0;
-            chatMsg("You swing your axe at the tree.", 'system');
-            // Face the tree
-            const tdx = pendingInteraction.tree.position.x - player.position.x;
-            const tdz = pendingInteraction.tree.position.z - player.position.z;
-            player.rotation.y = Math.atan2(tdx, tdz);
-          }
-        }
+        const pi = pendingInteraction;
         pendingInteraction = null;
+        if (pi.type === 'talk') openNPCDialog(pi.name);
+        else if (pi.type === 'chop') startChopping(pi.tree);
+        else if (pi.type === 'mine') startMining(pi.rock);
+        else if (pi.type === 'fish') startFishing(pi.spot);
+        else if (pi.type === 'attack') startCombat(pi.target);
       }
     }
   }
 
-  // Chopping
+  // Skills
   doChopTick(dt);
+  doMineTick(dt);
+  doFishTick(dt);
+  doCombatTick(dt);
 
   // Tree falling animation
   for (const t of trees) {
     if (t.userData.falling) {
-      t.userData.fallAngle += t.userData.fallSpeed * dt;
+      t.userData.fallAngle = (t.userData.fallAngle || 0) + 2 * dt;
       const axis = t.userData.fallAxis;
       t.setRotationFromAxisAngle(axis, Math.min(t.userData.fallAngle, Math.PI / 2));
       if (t.userData.fallAngle >= Math.PI / 2) {
@@ -1184,8 +3197,10 @@ function animate() {
     }
   }
 
-  // NPCs
+  // NPCs & Monsters
   updateNPCs(dt);
+  updateMonsters(dt);
+  updateLootPiles(dt);
 
   // Camera
   const camX = player.position.x + Math.sin(cameraAngle) * Math.cos(cameraPitch) * cameraDistance;
@@ -1194,14 +3209,46 @@ function animate() {
   camera.position.set(camX, camY, camZ);
   camera.lookAt(player.position.x, 2, player.position.z);
 
-  // Water animation
-  water.position.y = -0.3 + Math.sin(Date.now() * 0.001) * 0.1;
-  river.position.y = -0.2 + Math.sin(Date.now() * 0.0012) * 0.08;
+  // Water UV animation
+  if (waterMat.map) {
+    waterMat.map.offset.y += dt * 0.05;
+  }
+
+  // Fire animation
+  fireGroup.children.forEach(c => {
+    if (c.userData._flame) {
+      c.position.y = 0.5 + Math.sin(Date.now() * 0.01 + c.id) * 0.15;
+      c.scale.x = 0.8 + Math.sin(Date.now() * 0.008 + c.id * 2) * 0.3;
+    }
+  });
+  fireLight.intensity = 1.2 + Math.sin(Date.now() * 0.006) * 0.4;
+
+  // Mining rock sparkle
+  for (const r of miningRocks) {
+    if (r.userData._sparkle && r.userData.active) {
+      r.userData._sparkle.position.y = 1.2 + Math.sin(Date.now() * 0.004 + r.id) * 0.1;
+      r.userData._sparkle.rotation.y += dt * 2;
+    }
+  }
 
   // Click marker pulse
   if (clickMarker.visible) {
-    clickMarker.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.2);
+    clickMarker.scale.setScalar(1 + Math.sin(Date.now() * 0.005) * 0.15);
+    clickMarker.material.opacity = 0.5 + Math.sin(Date.now() * 0.003) * 0.3;
+    clickMarker.material.transparent = true;
   }
+
+  // Fishing spot bubble animation
+  for (const f of fishingSpots) {
+    f.children.forEach((c, i) => {
+      if (c.isMesh) {
+        c.position.y = 0.1 + Math.abs(Math.sin(Date.now() * 0.003 + i * 1.5)) * 0.4;
+      }
+    });
+  }
+
+  // Draw health bars every few frames
+  if (frameCount % 3 === 0) drawHealthBars();
 
   drawMinimap();
   renderer.render(scene, camera);
@@ -1217,71 +3264,76 @@ window.addEventListener('resize', () => {
 });
 
 // ============================================================
+// TOOLTIP
+// ============================================================
+const tooltip = document.getElementById('tooltip');
+renderer.domElement.addEventListener('mousemove', e => {
+  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(getClickableObjects(), true);
+  if (hits.length > 0) {
+    const group = findParentGroup(hits[0].object);
+    if (group && group.userData.name) {
+      tooltip.style.display = 'block';
+      tooltip.textContent = group.userData.name;
+      tooltip.style.left = (e.clientX + 15) + 'px';
+      tooltip.style.top = (e.clientY + 15) + 'px';
+
+      // Change cursor for monsters
+      if (group.userData.type === 'monster' && group.userData.active) {
+        renderer.domElement.style.cursor = 'crosshair';
+      } else {
+        renderer.domElement.style.cursor = 'pointer';
+      }
+      return;
+    }
+  }
+  tooltip.style.display = 'none';
+  renderer.domElement.style.cursor = 'default';
+});
+
+// ============================================================
 // LOADING
 // ============================================================
 const loadBar = document.getElementById('loading-bar');
 const loadScreen = document.getElementById('loading');
+const loadText = document.getElementById('loading-text');
+const loadMessages = [
+  'Planting trees...', 'Feeding chickens...', 'Polishing axes...',
+  'Stocking the general store...', 'Waking up Hans...',
+  'Mixing potions...', 'Sharpening swords...', 'Loading Lumbridge...'
+];
 let loadProgress = 0;
+let loadMsgIdx = 0;
 const loadInterval = setInterval(() => {
-  loadProgress += 8 + Math.random() * 12;
+  loadProgress += 6 + Math.random() * 10;
+  if (loadProgress > loadMsgIdx * 14 + 10) {
+    loadText.textContent = loadMessages[loadMsgIdx % loadMessages.length];
+    loadMsgIdx++;
+  }
   if (loadProgress >= 100) {
     loadProgress = 100;
     loadBar.style.width = '100%';
+    loadText.textContent = 'Welcome to LumbridgeScape!';
     clearInterval(loadInterval);
     setTimeout(() => {
       loadScreen.style.display = 'none';
       chatMsg("Welcome to LumbridgeScape!", 'system');
       chatMsg("Left-click to move. Right-click for options.", 'system');
-      chatMsg("You have a Bronze Axe equipped. Click trees to chop them!", 'system');
-      chatMsg("Talk to NPCs by clicking on them.", 'npc');
+      chatMsg("You have a Bronze Axe equipped — click trees to chop them!", 'system');
+      chatMsg("Kill chickens, mine rocks, catch fish. Level up!", 'npc');
+      chatMsg("Right-click inventory items to cook food near the fire.", 'system');
       animate();
-    }, 400);
+    }, 500);
   }
   loadBar.style.width = loadProgress + '%';
 }, 150);
 
-// ============================================================
-// DECORATIVE DETAILS
-// ============================================================
-// Flowers
-for (let i = 0; i < 30; i++) {
-  const flower = new THREE.Mesh(
-    new THREE.SphereGeometry(0.15, 6, 6),
-    new THREE.MeshLambertMaterial({ color: [0xff6699, 0xffff33, 0xff3333, 0x9933ff][Math.floor(Math.random() * 4)] })
-  );
-  flower.position.set(
-    (Math.random() - 0.5) * 80,
-    0.15,
-    (Math.random() - 0.5) * 80
-  );
-  scene.add(flower);
-}
-
-// Rocks
-for (let i = 0; i < 8; i++) {
-  const rock = new THREE.Mesh(
-    new THREE.DodecahedronGeometry(0.4 + Math.random() * 0.5, 0),
-    new THREE.MeshLambertMaterial({ color: 0x888888 })
-  );
-  rock.position.set(
-    (Math.random() - 0.5) * 60,
-    0.3,
-    (Math.random() - 0.5) * 60
-  );
-  rock.castShadow = true;
-  scene.add(rock);
-}
-
-// Fence near castle
-for (let i = -5; i <= 5; i++) {
-  const post = new THREE.Mesh(
-    new THREE.BoxGeometry(0.15, 1.2, 0.15),
-    new THREE.MeshLambertMaterial({ color: 0x6B4226 })
-  );
-  post.position.set(-12, 0.6, -30 + i * 2);
-  post.castShadow = true;
-  scene.add(post);
-}
+// Give player starting items
+addItem('Bronze pickaxe');
+addItem('Fishing rod');
+refreshInventory();
 
 </script>
 </body>
