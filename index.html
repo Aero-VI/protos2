@@ -1000,6 +1000,30 @@ const NPC_DIALOGS = {
       { text: "Can you bless me?", response: "May Saradomin protect you on your travels, adventurer." },
       { text: "Goodbye.", response: null }
     ]
+  },
+  'Farmer Fred': {
+    text: "Mornin'! I'm Farmer Fred. Watch out for them chickens — they look harmless but they'll peck ya!",
+    options: [
+      { text: "Can I help on the farm?", response: "Sure! Kill some of them chickens roaming about. Collect feathers and bones while you're at it — good practice for a young adventurer." },
+      { text: "What do you grow?", response: "Wheat, mostly. And I raise chickens. Well, I try to — they keep escapin' the coop!" },
+      { text: "Goodbye.", response: null }
+    ]
+  },
+  'Dwarven Miner': {
+    text: "Aye, welcome to the mines! There's copper and tin aplenty down here. Smelt 'em together and ye get bronze!",
+    options: [
+      { text: "Any mining tips?", response: "Click on the rocks to mine 'em! Copper's the orange ones, tin's the grey. Keep at it and your Mining level will go up in no time." },
+      { text: "What's the best ore?", response: "For a beginner like ye? Copper and tin. Mix 'em at a furnace for bronze bars. One day ye'll be mining runite!" },
+      { text: "See you around.", response: null }
+    ]
+  },
+  'Fisherman': {
+    text: "Ahoy! The river's full o' shrimp today. Grab yer net and give it a go!",
+    options: [
+      { text: "How do I fish?", response: "Just click on the fishing spot in the river. You'll need a net or rod. Cook what ye catch on a fire or range for Cooking XP!" },
+      { text: "What can I catch?", response: "Shrimps for now, lad. As your Fishing level grows, ye'll be hauling in trout, salmon, even lobsters!" },
+      { text: "Thanks, tight lines!", response: null }
+    ]
   }
 };
 
@@ -1932,6 +1956,10 @@ createNPC(-10, -22, 'Father Aereck', 0x222222, 0x222222, { hairColor: 0x888888 }
 createNPC(12, -15, 'Man', 0x886644, 0x443322, { hairColor: 0x4A2E16 });
 createNPC(-5, 8, 'Woman', 0x993366, 0x554433, { hairColor: 0x8B4513 });
 createNPC(20, -5, 'Duke Horacio', 0x8800AA, 0x333333, { hairColor: 0x666666 });
+// Specialty NPCs
+createNPC(32, -8, 'Farmer Fred', 0x668844, 0x554422, { hatColor: 0x8B6A40, hairColor: 0x6B4226 });
+createNPC(8, -48, 'Dwarven Miner', 0x884422, 0x443322, { hairColor: 0xAA6633, skinColor: 0xD0B090 });
+createNPC(-16, 10, 'Fisherman', 0x336688, 0x444444, { hatColor: 0x445566, hairColor: 0x888888 });
 
 // ============================================================
 // MONSTERS
